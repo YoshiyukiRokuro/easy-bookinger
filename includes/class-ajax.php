@@ -224,8 +224,7 @@ class EasyBookinger_Ajax {
             $formatted_slots[] = array(
                 'id' => $slot->id,
                 'start_time' => $slot->start_time,
-                'end_time' => $slot->end_time,
-                'slot_name' => $slot->slot_name ?: (date('H:i', strtotime($slot->start_time)) . '-' . date('H:i', strtotime($slot->end_time))),
+                'slot_name' => $slot->slot_name ?: date('H:i', strtotime($slot->start_time)),
                 'max_bookings' => $slot->max_bookings
             );
         }
@@ -283,10 +282,11 @@ class EasyBookinger_Ajax {
             }
             
             // Check current bookings for this time slot
+            $time_format = date('H:i', strtotime($time_slot->start_time));
             $current_bookings = $wpdb->get_var($wpdb->prepare(
                 "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND booking_time = %s AND status = 'active'",
                 $date,
-                $time_slot->id
+                $time_format
             ));
             
             if ($current_bookings >= $time_slot->max_bookings) {
