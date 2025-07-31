@@ -633,12 +633,6 @@ class EasyBookinger_Admin {
                             </td>
                         </tr>
                         <tr>
-                            <th scope="row"><?php _e('終了時間', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                            <td>
-                                <input type="time" name="end_time" required>
-                            </td>
-                        </tr>
-                        <tr>
                             <th scope="row"><?php _e('表示名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             <td>
                                 <input type="text" name="slot_name" class="regular-text" placeholder="例: 午前の部">
@@ -666,7 +660,6 @@ class EasyBookinger_Admin {
                         <thead>
                             <tr>
                                 <th><?php _e('開始時間', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                                <th><?php _e('終了時間', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                                 <th><?php _e('表示名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                                 <th><?php _e('最大予約数', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                                 <th><?php _e('状態', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
@@ -677,8 +670,7 @@ class EasyBookinger_Admin {
                             <?php foreach ($time_slots as $slot): ?>
                             <tr>
                                 <td><?php echo esc_html(date('H:i', strtotime($slot->start_time))); ?></td>
-                                <td><?php echo esc_html(date('H:i', strtotime($slot->end_time))); ?></td>
-                                <td><?php echo esc_html($slot->slot_name ?: (date('H:i', strtotime($slot->start_time)) . '-' . date('H:i', strtotime($slot->end_time)))); ?></td>
+                                <td><?php echo esc_html($slot->slot_name ?: date('H:i', strtotime($slot->start_time))); ?></td>
                                 <td><?php echo esc_html($slot->max_bookings); ?></td>
                                 <td>
                                     <?php if ($slot->is_active): ?>
@@ -931,11 +923,10 @@ class EasyBookinger_Admin {
         switch ($post_data['action']) {
             case 'add_timeslot':
                 $start_time = sanitize_text_field($post_data['start_time']) . ':00';
-                $end_time = sanitize_text_field($post_data['end_time']) . ':00';
                 $slot_name = sanitize_text_field($post_data['slot_name']);
                 $max_bookings = (int)$post_data['max_bookings'];
                 
-                if ($database->add_time_slot($start_time, $end_time, $slot_name, $max_bookings)) {
+                if ($database->add_time_slot($start_time, $slot_name, $max_bookings)) {
                     add_action('admin_notices', function() {
                         echo '<div class="notice notice-success is-dismissible"><p>' . __('時間帯を追加しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
                     });
