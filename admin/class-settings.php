@@ -146,6 +146,41 @@ class EasyBookinger_Settings {
                             <p class="description"><?php _e('無効にすると、当日の予約ができなくなります。予約は翌日以降のみ可能になります。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
                         </td>
                     </tr>
+                    
+                    <tr>
+                        <th scope="row"><?php _e('タイムゾーン', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                        <td>
+                            <select name="timezone">
+                                <?php
+                                $selected_timezone = $settings['timezone'] ?? 'Asia/Tokyo';
+                                $timezone_options = array(
+                                    'Asia/Tokyo' => __('日本標準時 (JST)', EASY_BOOKINGER_TEXT_DOMAIN),
+                                    'UTC' => __('協定世界時 (UTC)', EASY_BOOKINGER_TEXT_DOMAIN),
+                                    'America/New_York' => __('東部標準時 (EST)', EASY_BOOKINGER_TEXT_DOMAIN),
+                                    'America/Los_Angeles' => __('太平洋標準時 (PST)', EASY_BOOKINGER_TEXT_DOMAIN),
+                                    'Europe/London' => __('グリニッジ標準時 (GMT)', EASY_BOOKINGER_TEXT_DOMAIN),
+                                    'Asia/Seoul' => __('韓国標準時 (KST)', EASY_BOOKINGER_TEXT_DOMAIN),
+                                    'Asia/Shanghai' => __('中国標準時 (CST)', EASY_BOOKINGER_TEXT_DOMAIN),
+                                    'Australia/Sydney' => __('オーストラリア東部標準時 (AEST)', EASY_BOOKINGER_TEXT_DOMAIN)
+                                );
+                                
+                                foreach ($timezone_options as $tz => $name):
+                                ?>
+                                <option value="<?php echo esc_attr($tz); ?>" <?php selected($selected_timezone, $tz); ?>><?php echo esc_html($name); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description"><?php _e('カレンダーで使用するタイムゾーンを設定します。デフォルトは日本標準時です。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row"><?php _e('予約可能未来日数', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                        <td>
+                            <input type="number" name="max_future_days" value="<?php echo esc_attr($settings['max_future_days'] ?? 0); ?>" min="0" max="365" />
+                            <span><?php _e('日後まで', EASY_BOOKINGER_TEXT_DOMAIN); ?></span>
+                            <p class="description"><?php _e('0に設定すると制限なし。例：14と設定すると2週間先まで予約可能。表示月数とは別に予約受付期間を制限できます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                        </td>
+                    </tr>
                 </table>
                 
                 <h2><?php _e('フォーム設定', EASY_BOOKINGER_TEXT_DOMAIN); ?></h2>
@@ -232,6 +267,8 @@ class EasyBookinger_Settings {
             'default_daily_quota' => intval($_POST['default_daily_quota']),
             'enable_time_slots' => isset($_POST['enable_time_slots']),
             'allow_same_day_booking' => isset($_POST['allow_same_day_booking']),
+            'timezone' => sanitize_text_field($_POST['timezone'] ?? 'Asia/Tokyo'),
+            'max_future_days' => intval($_POST['max_future_days'] ?? 0),
             'booking_fields' => array()
         );
         
@@ -250,9 +287,10 @@ class EasyBookinger_Settings {
                         'maxlength' => !empty($field['maxlength']) ? intval($field['maxlength']) : 0
                     );
                     
-                    // Make email fields required by force (requirement #3)
+                    // Make email fields required by force and set max length to 256
                     if ($field['type'] === 'email' || $field['name'] === 'email' || $field['name'] === 'email_confirm') {
                         $field_data['required'] = true;
+                        $field_data['maxlength'] = 256;
                     }
                     
                     // Track if we have email fields
@@ -274,7 +312,7 @@ class EasyBookinger_Settings {
                     'label' => __('メールアドレス', EASY_BOOKINGER_TEXT_DOMAIN),
                     'type' => 'email',
                     'required' => true,
-                    'maxlength' => 0
+                    'maxlength' => 256
                 );
             }
             
@@ -284,7 +322,7 @@ class EasyBookinger_Settings {
                     'label' => __('メールアドレス（確認用）', EASY_BOOKINGER_TEXT_DOMAIN),
                     'type' => 'email',
                     'required' => true,
-                    'maxlength' => 0
+                    'maxlength' => 256
                 );
             }
         } else {
@@ -302,14 +340,14 @@ class EasyBookinger_Settings {
                     'label' => __('メールアドレス', EASY_BOOKINGER_TEXT_DOMAIN),
                     'type' => 'email',
                     'required' => true,
-                    'maxlength' => 0
+                    'maxlength' => 256
                 ),
                 array(
                     'name' => 'email_confirm',
                     'label' => __('メールアドレス（確認用）', EASY_BOOKINGER_TEXT_DOMAIN),
                     'type' => 'email',
                     'required' => true,
-                    'maxlength' => 0
+                    'maxlength' => 256
                 )
             );
         }

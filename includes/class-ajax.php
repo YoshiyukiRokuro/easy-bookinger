@@ -58,11 +58,21 @@ class EasyBookinger_Ajax {
         $settings = get_option('easy_bookinger_settings', array());
         $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
         $max_selectable_days = isset($settings['max_selectable_days']) ? (int)$settings['max_selectable_days'] : 5;
+        $enable_time_slots = isset($settings['enable_time_slots']) ? $settings['enable_time_slots'] : false;
+        $max_future_days = isset($settings['max_future_days']) ? (int)$settings['max_future_days'] : 0;
         
         // Validate maximum selectable days
         if (count($booking_dates) > $max_selectable_days) {
             wp_send_json_error(array(
                 'message' => sprintf(__('選択できる日数は最大%d日です', EASY_BOOKINGER_TEXT_DOMAIN), $max_selectable_days)
+            ));
+        }
+        
+        // Validate time slot selection if time slots are enabled
+        $time_slot_id = isset($form_data['booking_time_slot']) ? (int)$form_data['booking_time_slot'] : null;
+        if ($enable_time_slots && empty($time_slot_id)) {
+            wp_send_json_error(array(
+                'message' => __('時間帯を選択してください', EASY_BOOKINGER_TEXT_DOMAIN)
             ));
         }
         
@@ -80,6 +90,23 @@ class EasyBookinger_Ajax {
         $booked_dates = $database->get_booked_dates();
         
         foreach ($booking_dates as $date) {
+            // Validate date format
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                wp_send_json_error(array(
+                    'message' => sprintf(__('無効な日付形式です: %s', EASY_BOOKINGER_TEXT_DOMAIN), $date)
+                ));
+            }
+            
+            // Check max future days limit
+            if ($max_future_days > 0) {
+                $max_date = date('Y-m-d', strtotime("+{$max_future_days} days"));
+                if ($date > $max_date) {
+                    wp_send_json_error(array(
+                        'message' => sprintf(__('予約可能期間を超えています。%d日以内の日付を選択してください。', EASY_BOOKINGER_TEXT_DOMAIN), $max_future_days)
+                    ));
+                }
+            }
+            
             // Check date restrictions
             if ($database->is_date_restricted($date)) {
                 wp_send_json_error(array(
@@ -334,6 +361,10 @@ class EasyBookinger_Ajax {
                 case 'email':
                     if (!is_email($value)) {
                         $errors[$name] = sprintf(__('%sの形式が正しくありません', EASY_BOOKINGER_TEXT_DOMAIN), $label);
+                    }
+                    // Email fields have a max length of 256 characters
+                    if (mb_strlen($value) > 256) {
+                        $errors[$name] = sprintf(__('%sは256文字以内で入力してください', EASY_BOOKINGER_TEXT_DOMAIN), $label);
                     }
                     break;
                     
