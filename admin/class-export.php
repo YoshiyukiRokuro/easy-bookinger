@@ -135,27 +135,25 @@ class EasyBookinger_Export {
             return;
         }
         
-        // Generate CSV content
-        $csv_content = $this->generate_csv_content($bookings);
+        // Generate Excel content
+        $excel_content = $this->generate_excel_content($bookings);
         
         // Set headers for download
-        $filename = 'easy_bookinger_export_' . date('Y-m-d_H-i-s') . '.csv';
+        $filename = 'easy_bookinger_export_' . date('Y-m-d_H-i-s') . '.xls';
         
-        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Pragma: no-cache');
         header('Expires: 0');
         
-        // Output BOM for Excel UTF-8 support
-        echo "\xEF\xBB\xBF";
-        echo $csv_content;
+        echo $excel_content;
         exit;
     }
     
     /**
-     * Generate CSV content
+     * Generate Excel content
      */
-    private function generate_csv_content($bookings) {
+    private function generate_excel_content($bookings) {
         $settings = get_option('easy_bookinger_settings', array());
         $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
         
@@ -179,16 +177,24 @@ class EasyBookinger_Export {
             }
         }
         
-        $output = fopen('php://temp', 'r+');
+        // Start building Excel XML
+        $excel_xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $excel_xml .= '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
+        $excel_xml .= '<Worksheet ss:Name="予約データ">' . "\n";
+        $excel_xml .= '<Table>' . "\n";
         
-        // Write header
-        fputcsv($output, $headers);
+        // Header row
+        $excel_xml .= '<Row>' . "\n";
+        foreach ($headers as $header) {
+            $excel_xml .= '<Cell><Data ss:Type="String">' . htmlspecialchars($header, ENT_XML1, 'UTF-8') . '</Data></Cell>' . "\n";
+        }
+        $excel_xml .= '</Row>' . "\n";
         
-        // Write data rows
+        // Data rows
         foreach ($bookings as $booking) {
             $form_data = maybe_unserialize($booking->form_data);
             
-            $row = array(
+            $row_data = array(
                 $booking->id,
                 $booking->booking_date,
                 $booking->booking_time,
@@ -200,25 +206,26 @@ class EasyBookinger_Export {
                 $booking->created_at
             );
             
-            // Add custom field values
+            // Add custom field data
             foreach ($booking_fields as $field) {
                 if (!in_array($field['name'], array('user_name', 'email', 'email_confirm', 'phone', 'comment', 'booking_time'))) {
                     $value = isset($form_data[$field['name']]) ? $form_data[$field['name']] : '';
-                    if (is_array($value)) {
-                        $value = implode(', ', $value);
-                    }
-                    $row[] = $value;
+                    $row_data[] = $value;
                 }
             }
             
-            fputcsv($output, $row);
+            $excel_xml .= '<Row>' . "\n";
+            foreach ($row_data as $cell_data) {
+                $excel_xml .= '<Cell><Data ss:Type="String">' . htmlspecialchars($cell_data, ENT_XML1, 'UTF-8') . '</Data></Cell>' . "\n";
+            }
+            $excel_xml .= '</Row>' . "\n";
         }
         
-        rewind($output);
-        $csv_content = stream_get_contents($output);
-        fclose($output);
+        $excel_xml .= '</Table>' . "\n";
+        $excel_xml .= '</Worksheet>' . "\n";
+        $excel_xml .= '</Workbook>';
         
-        return $csv_content;
+        return $excel_xml;
     }
     
     /**
