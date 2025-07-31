@@ -582,7 +582,14 @@ class EasyBookinger_Admin {
                                     ?>
                                 </td>
                                 <td>
-                                    <!-- Update button removed - quota counts are automatically calculated -->
+                                    <form method="post" style="display: inline;">
+                                        <?php wp_nonce_field('eb_quotas_action', 'eb_quotas_nonce'); ?>
+                                        <input type="hidden" name="action" value="delete_quota">
+                                        <input type="hidden" name="quota_date" value="<?php echo esc_attr($quota->quota_date); ?>">
+                                        <input type="submit" class="button-small button-link-delete" 
+                                               value="<?php _e('削除', EASY_BOOKINGER_TEXT_DOMAIN); ?>"
+                                               onclick="return confirm('<?php _e('この予約枠設定を削除しますか？削除後はデフォルト値が適用されます。', EASY_BOOKINGER_TEXT_DOMAIN); ?>')" />
+                                    </form>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -887,6 +894,24 @@ class EasyBookinger_Admin {
                 } else {
                     add_action('admin_notices', function() {
                         echo '<div class="notice notice-error is-dismissible"><p>' . __('予約数の更新に失敗しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+                    });
+                }
+                break;
+                
+            case 'delete_quota':
+                $date = sanitize_text_field($post_data['quota_date']);
+                
+                // Delete the quota setting - the date will revert to default quota
+                global $wpdb;
+                $quotas_table = $wpdb->prefix . 'easy_bookinger_booking_quotas';
+                
+                if ($wpdb->delete($quotas_table, array('quota_date' => $date))) {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-success is-dismissible"><p>' . __('予約枠設定を削除しました。この日はデフォルト設定が適用されます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+                    });
+                } else {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-error is-dismissible"><p>' . __('予約枠設定の削除に失敗しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
                     });
                 }
                 break;

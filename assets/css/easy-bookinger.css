@@ -32,9 +32,15 @@
     background: #005a87;
 }
 
-.eb-nav-btn:disabled {
-    background: #ccc;
-    cursor: not-allowed;
+.eb-nav-btn:disabled,
+.eb-nav-btn.disabled {
+    background: #ccc !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
+
+.eb-nav-btn.disabled:hover {
+    background: #ccc !important;
 }
 
 .eb-current-month {
@@ -634,4 +640,57 @@
     font-size: 12px;
     color: #666;
     margin-top: 4px;
+}
+
+/* Special Availability Styles */
+.eb-calendar-day.special-availability {
+    background-color: #fff3e0 !important;
+    border: 2px solid #ff9800;
+    position: relative;
+}
+
+.eb-calendar-day.special-availability.selectable {
+    background-color: #fff8e1 !important;
+    color: #ef6c00;
+}
+
+.eb-calendar-day.special-availability.selectable:hover {
+    background-color: #ffecb3 !important;
+}
+
+.eb-calendar-day.special-availability::before {
+    content: '臨';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: #ff9800;
+    color: white;
+    font-size: 10px;
+    padding: 1px 3px;
+    border-radius: 2px;
+    line-height: 1;
+}
+
+.eb-day-special {
+    font-size: 10px;
+    color: #ef6c00;
+    background: #fff3e0;
+    border: 1px solid #ff9800;
+    border-radius: 2px;
+    padding: 1px 3px;
+    margin-top: 2px;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* Dark theme special availability */
+.easy-bookinger-theme-dark .eb-calendar-day.special-availability {
+    background-color: #444 !important;
+    border-color: #ff9800;
+}
+
+.easy-bookinger-theme-dark .eb-day-special {
+    background: #333;
+    color: #ffb74d;
+    border-color: #ff9800;
 }

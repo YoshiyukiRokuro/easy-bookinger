@@ -159,6 +159,18 @@ class EasyBookinger_Shortcode {
             $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
         }
         
+        // Get special availability dates
+        $special_availability = $database->get_special_availability($date_from, $date_to);
+        $special_availability_data = array();
+        foreach ($special_availability as $special) {
+            if ($special->is_available) {
+                $special_availability_data[$special->availability_date] = array(
+                    'reason' => $special->reason,
+                    'max_bookings' => $special->max_bookings
+                );
+            }
+        }
+        
         // Get time slots if enabled
         $time_slots = array();
         if ($enable_time_slots) {
@@ -297,6 +309,7 @@ class EasyBookinger_Shortcode {
                         bookedDates: <?php echo json_encode($booked_dates); ?>,
                         restrictedDates: <?php echo json_encode($restricted_dates_array); ?>,
                         quotasData: <?php echo json_encode($quotas_data); ?>,
+                        specialAvailability: <?php echo json_encode($special_availability_data); ?>,
                         enableTimeSlots: <?php echo json_encode($enable_time_slots); ?>,
                         timeSlots: <?php echo json_encode($time_slots); ?>,
                         bookingFields: <?php echo json_encode($booking_fields); ?>
