@@ -43,16 +43,12 @@ class EasyBookinger_Database {
             comment text DEFAULT NULL,
             form_data longtext DEFAULT NULL,
             status varchar(20) DEFAULT 'active',
-            pdf_token varchar(255) DEFAULT NULL,
-            pdf_password varchar(12) DEFAULT NULL,
-            pdf_expires datetime DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY booking_date (booking_date),
             KEY email (email),
-            KEY status (status),
-            KEY pdf_token (pdf_token)
+            KEY status (status)
         ) $charset_collate;";
         
         // Settings table
@@ -65,23 +61,6 @@ class EasyBookinger_Database {
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY setting_key (setting_key)
-        ) $charset_collate;";
-        
-        // PDF links table
-        $pdf_links_table = $wpdb->prefix . 'easy_bookinger_pdf_links';
-        $sql_pdf_links = "CREATE TABLE $pdf_links_table (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            booking_id mediumint(9) NOT NULL,
-            token varchar(255) NOT NULL,
-            password varchar(12) NOT NULL,
-            expires_at datetime NOT NULL,
-            download_count int DEFAULT 0,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            UNIQUE KEY token (token),
-            KEY booking_id (booking_id),
-            KEY expires_at (expires_at),
-            FOREIGN KEY (booking_id) REFERENCES $bookings_table(id) ON DELETE CASCADE
         ) $charset_collate;";
         
         // Date restrictions table
@@ -128,7 +107,6 @@ class EasyBookinger_Database {
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_bookings);
         dbDelta($sql_settings);
-        dbDelta($sql_pdf_links);
         dbDelta($sql_restrictions);
         dbDelta($sql_quotas);
         dbDelta($sql_timeslots);
@@ -221,10 +199,7 @@ class EasyBookinger_Database {
             'phone' => sanitize_text_field($data['phone'] ?? ''),
             'comment' => sanitize_textarea_field($data['comment'] ?? ''),
             'form_data' => maybe_serialize($data['form_data'] ?? array()),
-            'status' => 'active',
-            'pdf_token' => $this->generate_token(),
-            'pdf_password' => $this->generate_password(),
-            'pdf_expires' => date('Y-m-d H:i:s', strtotime('+180 days'))
+            'status' => 'active'
         );
         
         $result = $wpdb->insert($table, $booking_data);
@@ -344,19 +319,6 @@ class EasyBookinger_Database {
      */
     private function generate_password() {
         return wp_generate_password(12, false);
-    }
-    
-    /**
-     * Get booking by PDF token
-     */
-    public function get_booking_by_token($token) {
-        global $wpdb;
-        
-        $table = $wpdb->prefix . 'easy_bookinger_bookings';
-        return $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table WHERE pdf_token = %s AND pdf_expires > NOW() AND status = 'active'", 
-            $token
-        ));
     }
     
     /**

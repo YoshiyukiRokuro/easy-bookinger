@@ -71,15 +71,6 @@ class EasyBookinger_Settings {
                     </tr>
                     
                     <tr>
-                        <th scope="row"><?php _e('PDFファイル有効期限', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                        <td>
-                            <input type="number" name="pdf_expiry_days" value="<?php echo esc_attr($settings['pdf_expiry_days'] ?? 180); ?>" min="1" max="365" />
-                            <span><?php _e('日', EASY_BOOKINGER_TEXT_DOMAIN); ?></span>
-                            <p class="description"><?php _e('PDFダウンロードリンクの有効期限を日数で設定します', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
-                        </td>
-                    </tr>
-                    
-                    <tr>
                         <th scope="row"><?php _e('メール通知設定', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                         <td>
                             <label>
@@ -258,7 +249,6 @@ class EasyBookinger_Settings {
             'display_months' => intval($_POST['display_months']),
             'max_selectable_days' => intval($_POST['max_selectable_days']),
             'allowed_days' => array_map('intval', $_POST['allowed_days'] ?? array()),
-            'pdf_expiry_days' => intval($_POST['pdf_expiry_days']),
             'admin_email_enabled' => isset($_POST['admin_email_enabled']),
             'user_email_enabled' => isset($_POST['user_email_enabled']),
             'default_daily_quota' => intval($_POST['default_daily_quota']),

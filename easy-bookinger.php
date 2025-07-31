@@ -81,7 +81,6 @@ final class EasyBookinger {
         require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-shortcode.php';
         require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-ajax.php';
         require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-email.php';
-        require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-pdf.php';
         
         // Admin includes
         if (is_admin()) {
@@ -197,7 +196,6 @@ final class EasyBookinger {
                     'maxlength' => 200
                 )
             ),
-            'pdf_expiry_days' => 180,
             'admin_email_enabled' => true,
             'user_email_enabled' => true
         );
