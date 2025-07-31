@@ -1,0 +1,233 @@
+# Easy Bookinger Japanese Language File
+msgid ""
+msgstr ""
+"Project-Id-Version: Easy Bookinger 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+# Main plugin strings
+msgid "Easy Bookinger"
+msgstr "Easy Bookinger"
+
+msgid "WordPress予約日登録・集計システム"
+msgstr "WordPress予約日登録・集計システム"
+
+# Calendar interface
+msgid "日付を選択してください"
+msgstr "日付を選択してください"
+
+msgid "選択できる日数の上限を超えています"
+msgstr "選択できる日数の上限を超えています"
+
+msgid "前月"
+msgstr "前月"
+
+msgid "次月"
+msgstr "次月"
+
+msgid "今日"
+msgstr "今日"
+
+msgid "予約"
+msgstr "予約"
+
+msgid "キャンセル"
+msgstr "キャンセル"
+
+msgid "登録"
+msgstr "登録"
+
+msgid "閉じる"
+msgstr "閉じる"
+
+# Day names
+msgid "日"
+msgstr "日"
+
+msgid "月"
+msgstr "月"
+
+msgid "火"
+msgstr "火"
+
+msgid "水"
+msgstr "水"
+
+msgid "木"
+msgstr "木"
+
+msgid "金"
+msgstr "金"
+
+msgid "土"
+msgstr "土"
+
+# Month names
+msgid "1月"
+msgstr "1月"
+
+msgid "2月"
+msgstr "2月"
+
+msgid "3月"
+msgstr "3月"
+
+msgid "4月"
+msgstr "4月"
+
+msgid "5月"
+msgstr "5月"
+
+msgid "6月"
+msgstr "6月"
+
+msgid "7月"
+msgstr "7月"
+
+msgid "8月"
+msgstr "8月"
+
+msgid "9月"
+msgstr "9月"
+
+msgid "10月"
+msgstr "10月"
+
+msgid "11月"
+msgstr "11月"
+
+msgid "12月"
+msgstr "12月"
+
+# Form fields
+msgid "氏名"
+msgstr "氏名"
+
+msgid "メールアドレス"
+msgstr "メールアドレス"
+
+msgid "メールアドレス（確認用）"
+msgstr "メールアドレス（確認用）"
+
+msgid "コメント"
+msgstr "コメント"
+
+msgid "選択してください"
+msgstr "選択してください"
+
+# Messages
+msgid "予約が完了しました"
+msgstr "予約が完了しました"
+
+msgid "予約の登録に失敗しました"
+msgstr "予約の登録に失敗しました"
+
+msgid "入力内容に誤りがあります"
+msgstr "入力内容に誤りがあります"
+
+msgid "処理中..."
+msgstr "処理中..."
+
+msgid "セキュリティチェックに失敗しました"
+msgstr "セキュリティチェックに失敗しました"
+
+# Admin interface
+msgid "予約管理"
+msgstr "予約管理"
+
+msgid "設定"
+msgstr "設定"
+
+msgid "エクスポート"
+msgstr "エクスポート"
+
+msgid "予約一覧"
+msgstr "予約一覧"
+
+msgid "ID"
+msgstr "ID"
+
+msgid "予約日"
+msgstr "予約日"
+
+msgid "時間"
+msgstr "時間"
+
+msgid "メール"
+msgstr "メール"
+
+msgid "電話"
+msgstr "電話"
+
+msgid "ステータス"
+msgstr "ステータス"
+
+msgid "登録日"
+msgstr "登録日"
+
+msgid "操作"
+msgstr "操作"
+
+msgid "詳細"
+msgstr "詳細"
+
+msgid "有効"
+msgstr "有効"
+
+msgid "無効"
+msgstr "無効"
+
+msgid "削除"
+msgstr "削除"
+
+msgid "本当に削除しますか？"
+msgstr "本当に削除しますか？"
+
+# Settings
+msgid "表示月数"
+msgstr "表示月数"
+
+msgid "最大選択可能日数"
+msgstr "最大選択可能日数"
+
+msgid "予約可能曜日"
+msgstr "予約可能曜日"
+
+msgid "日曜日"
+msgstr "日曜日"
+
+msgid "月曜日"
+msgstr "月曜日"
+
+msgid "火曜日"
+msgstr "火曜日"
+
+msgid "水曜日"
+msgstr "水曜日"
+
+msgid "木曜日"
+msgstr "木曜日"
+
+msgid "金曜日"
+msgstr "金曜日"
+
+msgid "土曜日"
+msgstr "土曜日"
+
+# Email
+msgid "[%s] 新しい予約が登録されました"
+msgstr "[%s] 新しい予約が登録されました"
+
+msgid "[%s] 予約確認メール"
+msgstr "[%s] 予約確認メール"
+
+msgid "予約確認書"
+msgstr "予約確認書"
