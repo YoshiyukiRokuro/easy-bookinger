@@ -153,17 +153,25 @@
             var remainingQuota = this.quotasData[dateStr] || 0;
             var isQuotaFull = remainingQuota <= 0;
             
+            // Check if date is beyond display months range
+            var maxDisplayDate = new Date(today);
+            maxDisplayDate.setMonth(maxDisplayDate.getMonth() + this.settings.displayMonths);
+            var isBeyondDisplayRange = date > maxDisplayDate;
+            
             var classes = ['eb-calendar-day'];
             
             if (isOtherMonth) {
                 classes.push('other-month');
-            } else if (isPast || !isAllowedDay || isRestricted || isQuotaFull) {
+            } else if (isPast || !isAllowedDay || isRestricted || isQuotaFull || isBeyondDisplayRange) {
                 classes.push('disabled');
                 if (isRestricted) {
                     classes.push('restricted');
                 }
                 if (isQuotaFull) {
                     classes.push('quota-full');
+                }
+                if (isBeyondDisplayRange) {
+                    classes.push('beyond-range');
                 }
             } else {
                 classes.push('selectable');
@@ -182,18 +190,14 @@
             }
             
             var statusText = '';
-            if (isRestricted) {
-                statusText = '<div class="eb-day-status restricted">制限日</div>';
-            } else if (isQuotaFull) {
-                statusText = '<div class="eb-day-status quota-full">満枠</div>';
-            } else if (isBooked) {
-                statusText = '<div class="eb-day-status booked">予約済</div>';
-            } else if (isPast) {
-                statusText = '<div class="eb-day-status past">過去</div>';
+            if (isPast || isRestricted || isBeyondDisplayRange) {
+                statusText = '<div class="eb-day-status unavailable">不可</div>';
             } else if (!isAllowedDay) {
                 statusText = '<div class="eb-day-status not-allowed">不可</div>';
+            } else if (isQuotaFull) {
+                statusText = '<div class="eb-day-status quota-full">満杯</div>';
             } else if (remainingQuota > 0) {
-                statusText = '<div class="eb-day-status available">残り' + remainingQuota + '</div>';
+                statusText = '<div class="eb-day-status available">残り' + remainingQuota + '件</div>';
             }
             
             var $day = $('<div>')

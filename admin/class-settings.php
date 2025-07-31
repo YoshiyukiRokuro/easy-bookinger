@@ -71,15 +71,6 @@ class EasyBookinger_Settings {
                     </tr>
                     
                     <tr>
-                        <th scope="row"><?php _e('PDFファイル有効期限', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                        <td>
-                            <input type="number" name="pdf_expiry_days" value="<?php echo esc_attr($settings['pdf_expiry_days'] ?? 180); ?>" min="1" max="365" />
-                            <span><?php _e('日', EASY_BOOKINGER_TEXT_DOMAIN); ?></span>
-                            <p class="description"><?php _e('PDFダウンロードリンクの有効期限を日数で設定します', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
-                        </td>
-                    </tr>
-                    
-                    <tr>
                         <th scope="row"><?php _e('メール通知設定', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                         <td>
                             <label>
@@ -178,71 +169,6 @@ class EasyBookinger_Settings {
                 <?php submit_button(); ?>
             </form>
         </div>
-        
-        <script>
-        jQuery(document).ready(function($) {
-            var fieldIndex = <?php echo count($booking_fields); ?>;
-            
-            $('#add-field').click(function() {
-                var fieldHtml = `
-                <div class="booking-field-row" data-index="${fieldIndex}">
-                    <table class="form-table">
-                        <tr>
-                            <th><?php _e('項目名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                            <td>
-                                <input type="text" name="booking_fields[${fieldIndex}][name]" value="" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <th><?php _e('ラベル', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                            <td>
-                                <input type="text" name="booking_fields[${fieldIndex}][label]" value="" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <th><?php _e('タイプ', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                            <td>
-                                <select name="booking_fields[${fieldIndex}][type]">
-                                    <option value="text"><?php _e('テキスト', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                    <option value="email"><?php _e('メール', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                    <option value="tel"><?php _e('電話番号', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                    <option value="textarea"><?php _e('テキストエリア', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                    <option value="select"><?php _e('セレクト', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                    <option value="radio"><?php _e('ラジオボタン', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                    <option value="checkbox"><?php _e('チェックボックス', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th><?php _e('必須', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                            <td>
-                                <label>
-                                    <input type="checkbox" name="booking_fields[${fieldIndex}][required]" value="1" />
-                                    <?php _e('必須項目にする', EASY_BOOKINGER_TEXT_DOMAIN); ?>
-                                </label>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th><?php _e('最大文字数', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                            <td>
-                                <input type="number" name="booking_fields[${fieldIndex}][maxlength]" value="" min="1" />
-                                <p class="description"><?php _e('テキスト・テキストエリア項目の最大文字数（空の場合は制限なし）', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
-                            </td>
-                        </tr>
-                    </table>
-                    <button type="button" class="button remove-field"><?php _e('この項目を削除', EASY_BOOKINGER_TEXT_DOMAIN); ?></button>
-                    <hr>
-                </div>`;
-                
-                $('#booking-fields-container').append(fieldHtml);
-                fieldIndex++;
-            });
-            
-            $(document).on('click', '.remove-field', function() {
-                $(this).closest('.booking-field-row').remove();
-            });
-        });
-        </script>
         <?php
     }
     
@@ -258,7 +184,6 @@ class EasyBookinger_Settings {
             'display_months' => intval($_POST['display_months']),
             'max_selectable_days' => intval($_POST['max_selectable_days']),
             'allowed_days' => array_map('intval', $_POST['allowed_days'] ?? array()),
-            'pdf_expiry_days' => intval($_POST['pdf_expiry_days']),
             'admin_email_enabled' => isset($_POST['admin_email_enabled']),
             'user_email_enabled' => isset($_POST['user_email_enabled']),
             'default_daily_quota' => intval($_POST['default_daily_quota']),

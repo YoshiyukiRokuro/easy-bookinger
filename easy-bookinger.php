@@ -81,13 +81,13 @@ final class EasyBookinger {
         require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-shortcode.php';
         require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-ajax.php';
         require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-email.php';
-        require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-pdf.php';
         
         // Admin includes
         if (is_admin()) {
             require_once EASY_BOOKINGER_PLUGIN_DIR . 'admin/class-admin.php';
             require_once EASY_BOOKINGER_PLUGIN_DIR . 'admin/class-settings.php';
             require_once EASY_BOOKINGER_PLUGIN_DIR . 'admin/class-export.php';
+            require_once EASY_BOOKINGER_PLUGIN_DIR . 'admin/class-backup.php';
         }
         
         // Public includes
@@ -197,7 +197,6 @@ final class EasyBookinger {
                     'maxlength' => 200
                 )
             ),
-            'pdf_expiry_days' => 180,
             'admin_email_enabled' => true,
             'user_email_enabled' => true
         );
@@ -227,7 +226,6 @@ final class EasyBookinger {
             foreach ($default_slots as $slot) {
                 $database->add_time_slot(
                     $slot['start_time'],
-                    $slot['end_time'], 
                     $slot['slot_name'],
                     $slot['max_bookings']
                 );

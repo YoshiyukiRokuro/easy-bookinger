@@ -43,16 +43,12 @@ class EasyBookinger_Database {
             comment text DEFAULT NULL,
             form_data longtext DEFAULT NULL,
             status varchar(20) DEFAULT 'active',
-            pdf_token varchar(255) DEFAULT NULL,
-            pdf_password varchar(12) DEFAULT NULL,
-            pdf_expires datetime DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY booking_date (booking_date),
             KEY email (email),
-            KEY status (status),
-            KEY pdf_token (pdf_token)
+            KEY status (status)
         ) $charset_collate;";
         
         // Settings table
@@ -65,23 +61,6 @@ class EasyBookinger_Database {
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY setting_key (setting_key)
-        ) $charset_collate;";
-        
-        // PDF links table
-        $pdf_links_table = $wpdb->prefix . 'easy_bookinger_pdf_links';
-        $sql_pdf_links = "CREATE TABLE $pdf_links_table (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            booking_id mediumint(9) NOT NULL,
-            token varchar(255) NOT NULL,
-            password varchar(12) NOT NULL,
-            expires_at datetime NOT NULL,
-            download_count int DEFAULT 0,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            UNIQUE KEY token (token),
-            KEY booking_id (booking_id),
-            KEY expires_at (expires_at),
-            FOREIGN KEY (booking_id) REFERENCES $bookings_table(id) ON DELETE CASCADE
         ) $charset_collate;";
         
         // Date restrictions table
@@ -115,7 +94,6 @@ class EasyBookinger_Database {
         $sql_timeslots = "CREATE TABLE $timeslots_table (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             start_time time NOT NULL,
-            end_time time NOT NULL,
             slot_name varchar(50) DEFAULT NULL,
             is_active tinyint(1) DEFAULT 1,
             max_bookings int DEFAULT 1,
@@ -128,7 +106,6 @@ class EasyBookinger_Database {
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_bookings);
         dbDelta($sql_settings);
-        dbDelta($sql_pdf_links);
         dbDelta($sql_restrictions);
         dbDelta($sql_quotas);
         dbDelta($sql_timeslots);
@@ -221,10 +198,7 @@ class EasyBookinger_Database {
             'phone' => sanitize_text_field($data['phone'] ?? ''),
             'comment' => sanitize_textarea_field($data['comment'] ?? ''),
             'form_data' => maybe_serialize($data['form_data'] ?? array()),
-            'status' => 'active',
-            'pdf_token' => $this->generate_token(),
-            'pdf_password' => $this->generate_password(),
-            'pdf_expires' => date('Y-m-d H:i:s', strtotime('+180 days'))
+            'status' => 'active'
         );
         
         $result = $wpdb->insert($table, $booking_data);
@@ -344,19 +318,6 @@ class EasyBookinger_Database {
      */
     private function generate_password() {
         return wp_generate_password(12, false);
-    }
-    
-    /**
-     * Get booking by PDF token
-     */
-    public function get_booking_by_token($token) {
-        global $wpdb;
-        
-        $table = $wpdb->prefix . 'easy_bookinger_bookings';
-        return $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table WHERE pdf_token = %s AND pdf_expires > NOW() AND status = 'active'", 
-            $token
-        ));
     }
     
     /**
@@ -567,14 +528,13 @@ class EasyBookinger_Database {
     /**
      * Add time slot
      */
-    public function add_time_slot($start_time, $end_time, $slot_name = '', $max_bookings = 1) {
+    public function add_time_slot($start_time, $slot_name = '', $max_bookings = 1) {
         global $wpdb;
         
         $table = $wpdb->prefix . 'easy_bookinger_time_slots';
         
         return $wpdb->insert($table, array(
             'start_time' => sanitize_text_field($start_time),
-            'end_time' => sanitize_text_field($end_time),
             'slot_name' => sanitize_text_field($slot_name),
             'max_bookings' => (int)$max_bookings,
             'is_active' => 1
@@ -593,10 +553,6 @@ class EasyBookinger_Database {
         
         if (isset($data['start_time'])) {
             $update_data['start_time'] = sanitize_text_field($data['start_time']);
-        }
-        
-        if (isset($data['end_time'])) {
-            $update_data['end_time'] = sanitize_text_field($data['end_time']);
         }
         
         if (isset($data['slot_name'])) {
@@ -634,27 +590,15 @@ class EasyBookinger_Database {
     public static function get_default_time_slots() {
         $slots = array();
         
-        // Generate 15-minute slots from 9:00 to 17:00
+        // Generate hourly slots from 9:00 to 17:00
         for ($hour = 9; $hour < 17; $hour++) {
-            for ($minute = 0; $minute < 60; $minute += 15) {
-                $start_time = sprintf('%02d:%02d:00', $hour, $minute);
-                $end_minute = $minute + 15;
-                $end_hour = $hour;
-                
-                if ($end_minute >= 60) {
-                    $end_minute = 0;
-                    $end_hour++;
-                }
-                
-                $end_time = sprintf('%02d:%02d:00', $end_hour, $end_minute);
-                
-                $slots[] = array(
-                    'start_time' => $start_time,
-                    'end_time' => $end_time,
-                    'slot_name' => sprintf('%02d:%02d-%02d:%02d', $hour, $minute, $end_hour, $end_minute),
-                    'max_bookings' => 1
-                );
-            }
+            $start_time = sprintf('%02d:00:00', $hour);
+            
+            $slots[] = array(
+                'start_time' => $start_time,
+                'slot_name' => sprintf('%02d:00', $hour),
+                'max_bookings' => 1
+            );
         }
         
         return $slots;

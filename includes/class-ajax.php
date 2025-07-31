@@ -27,9 +27,6 @@ class EasyBookinger_Ajax {
         add_action('wp_ajax_eb_get_calendar_data', array($this, 'get_calendar_data'));
         add_action('wp_ajax_nopriv_eb_get_calendar_data', array($this, 'get_calendar_data'));
         
-        add_action('wp_ajax_eb_download_pdf', array($this, 'download_pdf'));
-        add_action('wp_ajax_nopriv_eb_download_pdf', array($this, 'download_pdf'));
-        
         add_action('wp_ajax_eb_get_time_slots', array($this, 'get_time_slots'));
         add_action('wp_ajax_nopriv_eb_get_time_slots', array($this, 'get_time_slots'));
         
@@ -101,8 +98,6 @@ class EasyBookinger_Ajax {
         
         // Create bookings for each selected date
         $booking_ids = array();
-        $pdf_token = wp_generate_password(32, false);
-        $pdf_password = wp_generate_password(12, false);
         $time_slot_id = isset($form_data['booking_time_slot']) ? (int)$form_data['booking_time_slot'] : null;
         
         foreach ($booking_dates as $date) {
@@ -113,9 +108,7 @@ class EasyBookinger_Ajax {
                 'email' => sanitize_email($form_data['email']),
                 'phone' => sanitize_text_field($form_data['phone'] ?? ''),
                 'comment' => sanitize_textarea_field($form_data['comment'] ?? ''),
-                'form_data' => $form_data,
-                'pdf_token' => $pdf_token,
-                'pdf_password' => $pdf_password
+                'form_data' => $form_data
             );
             
             $booking_id = $database->create_booking($booking_data);
@@ -148,17 +141,9 @@ class EasyBookinger_Ajax {
             $email_handler->send_user_confirmation($booking_ids[0]);
         }
         
-        // Prepare response
-        $pdf_url = add_query_arg(array(
-            'action' => 'eb_download_pdf',
-            'token' => $pdf_token
-        ), admin_url('admin-ajax.php'));
-        
         wp_send_json_success(array(
             'message' => __('予約が完了しました', EASY_BOOKINGER_TEXT_DOMAIN),
             'booking_ids' => $booking_ids,
-            'pdf_url' => $pdf_url,
-            'pdf_password' => $pdf_password,
             'booking_dates' => $booking_dates
         ));
     }
@@ -307,35 +292,6 @@ class EasyBookinger_Ajax {
             'remaining_quota' => $remaining_quota,
             'message' => __('予約可能です', EASY_BOOKINGER_TEXT_DOMAIN)
         ));
-    }
-    
-    /**
-     * Download PDF
-     */
-    public function download_pdf() {
-        $token = isset($_GET['token']) ? sanitize_text_field($_GET['token']) : '';
-        $password = isset($_GET['password']) ? sanitize_text_field($_GET['password']) : '';
-        
-        if (empty($token)) {
-            wp_die(__('無効なアクセスです', EASY_BOOKINGER_TEXT_DOMAIN));
-        }
-        
-        // Get booking by token
-        $database = EasyBookinger_Database::instance();
-        $booking = $database->get_booking_by_token($token);
-        
-        if (!$booking) {
-            wp_die(__('予約が見つからないか、有効期限が切れています', EASY_BOOKINGER_TEXT_DOMAIN));
-        }
-        
-        // Verify password if provided
-        if (!empty($password) && $password !== $booking->pdf_password) {
-            wp_die(__('パスワードが正しくありません', EASY_BOOKINGER_TEXT_DOMAIN));
-        }
-        
-        // Generate PDF
-        $pdf_handler = new EasyBookinger_PDF();
-        $pdf_handler->generate_booking_pdf($booking);
     }
     
     /**

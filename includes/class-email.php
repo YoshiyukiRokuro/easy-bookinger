@@ -56,12 +56,7 @@ class EasyBookinger_Email {
         
         $form_data = maybe_unserialize($booking->form_data);
         
-        $pdf_url = add_query_arg(array(
-            'action' => 'eb_download_pdf',
-            'token' => $booking->pdf_token
-        ), admin_url('admin-ajax.php'));
-        
-        $message = $this->get_user_email_template($booking, $form_data, $pdf_url);
+        $message = $this->get_user_email_template($booking, $form_data);
         
         $headers = array(
             'Content-Type: text/html; charset=UTF-8',
@@ -175,7 +170,7 @@ class EasyBookinger_Email {
     /**
      * Get user email template
      */
-    private function get_user_email_template($booking, $form_data, $pdf_url) {
+    private function get_user_email_template($booking, $form_data) {
         $site_name = get_bloginfo('name');
         $site_url = get_bloginfo('url');
         
@@ -246,21 +241,6 @@ class EasyBookinger_Email {
                             <span><?php echo nl2br(esc_html($booking->comment)); ?></span>
                         </div>
                         <?php endif; ?>
-                    </div>
-                    
-                    <div class="pdf-info">
-                        <h3>📄 予約確認書（PDF）</h3>
-                        <p>下記のリンクから予約確認書をダウンロードできます。</p>
-                        
-                        <a href="<?php echo esc_url($pdf_url); ?>" class="pdf-button">予約確認書をダウンロード</a>
-                        
-                        <p><strong>PDFパスワード:</strong> <span class="password"><?php echo esc_html($booking->pdf_password); ?></span></p>
-                        
-                        <div class="note">
-                            <p>※ PDFのダウンロードには上記のパスワードが必要です。<br>
-                            ※ このリンクの有効期限は<?php echo esc_html(date('Y年n月j日', strtotime($booking->pdf_expires))); ?>です。<br>
-                            ※ パスワードは大切に保管してください。</p>
-                        </div>
                     </div>
                     
                     <p>ご不明な点がございましたら、お気軽にお問い合わせください。</p>
