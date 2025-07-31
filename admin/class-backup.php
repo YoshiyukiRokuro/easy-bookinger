@@ -36,6 +36,30 @@ class EasyBookinger_Backup {
                     
                     <table class="form-table">
                         <tr>
+                            <th scope="row"><?php _e('ファイル名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                            <td>
+                                <input type="text" name="backup_filename" value="<?php echo esc_attr('easy_bookinger_backup_' . date('Y-m-d')); ?>" style="width: 300px;" />
+                                <p class="description"><?php _e('バックアップファイルの名前を指定してください（拡張子は自動で付きます）', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row"><?php _e('ファイル形式', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                            <td>
+                                <label>
+                                    <input type="radio" name="backup_format" value="json" checked />
+                                    <?php _e('JSON形式（復元可能）', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                                    <span class="description"><?php _e('- 完全なバックアップ・復元に対応', EASY_BOOKINGER_TEXT_DOMAIN); ?></span>
+                                </label><br>
+                                <label>
+                                    <input type="radio" name="backup_format" value="csv" />
+                                    <?php _e('CSV形式（閲覧用）', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                                    <span class="description"><?php _e('- 予約データのみ、Excel等で閲覧可能', EASY_BOOKINGER_TEXT_DOMAIN); ?></span>
+                                </label>
+                            </td>
+                        </tr>
+                        
+                        <tr>
                             <th scope="row"><?php _e('バックアップに含める項目', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             <td>
                                 <label>
@@ -57,6 +81,14 @@ class EasyBookinger_Backup {
                                 <label>
                                     <input type="checkbox" name="backup_timeslots" value="1" checked />
                                     <?php _e('時間帯設定', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                                </label><br>
+                                <label>
+                                    <input type="checkbox" name="backup_special_availability" value="1" checked />
+                                    <?php _e('臨時予約設定', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                                </label><br>
+                                <label>
+                                    <input type="checkbox" name="backup_admin_emails" value="1" checked />
+                                    <?php _e('管理者メール設定', EASY_BOOKINGER_TEXT_DOMAIN); ?>
                                 </label>
                             </td>
                         </tr>
@@ -120,6 +152,20 @@ class EasyBookinger_Backup {
             wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
         }
         
+        $backup_format = sanitize_text_field($_POST['backup_format'] ?? 'json');
+        $custom_filename = !empty($_POST['backup_filename']) ? sanitize_file_name($_POST['backup_filename']) : 'easy_bookinger_backup_' . date('Y-m-d');
+        
+        if ($backup_format === 'csv') {
+            $this->create_csv_backup($custom_filename);
+        } else {
+            $this->create_json_backup($custom_filename);
+        }
+    }
+    
+    /**
+     * Create JSON backup
+     */
+    private function create_json_backup($filename) {
         global $wpdb;
         $database = EasyBookinger_Database::instance();
         
@@ -162,17 +208,134 @@ class EasyBookinger_Backup {
             $backup_data['data']['timeslots'] = $timeslots;
         }
         
+        // Backup special availability
+        if (isset($_POST['backup_special_availability'])) {
+            $special_availability = $database->get_special_availability();
+            $backup_data['data']['special_availability'] = $special_availability;
+        }
+        
+        // Backup admin emails
+        if (isset($_POST['backup_admin_emails'])) {
+            $admin_emails = $database->get_admin_emails();
+            $backup_data['data']['admin_emails'] = $admin_emails;
+        }
+        
         // Generate filename
-        $filename = 'easy_bookinger_backup_' . date('Y-m-d_H-i-s') . '.json';
+        $full_filename = $filename . '.json';
         
         // Set headers for download
-        header('Content-Type: application/json');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Type: application/json; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $full_filename . '"');
         header('Pragma: no-cache');
         header('Expires: 0');
         
         echo json_encode($backup_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         exit;
+    }
+    
+    /**
+     * Create CSV backup
+     */
+    private function create_csv_backup($filename) {
+        $database = EasyBookinger_Database::instance();
+        
+        // For CSV backup, we primarily export booking data
+        if (!isset($_POST['backup_bookings'])) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-warning is-dismissible"><p>' . __('CSV形式では予約データの選択が必要です', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+            });
+            return;
+        }
+        
+        $bookings = $database->get_bookings(array('status' => ''));
+        
+        if (empty($bookings)) {
+            add_action('admin_notices', function() {
+                echo '<div class="notice notice-warning is-dismissible"><p>' . __('バックアップするデータがありません', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+            });
+            return;
+        }
+        
+        // Generate filename
+        $full_filename = $filename . '.csv';
+        
+        // Set headers for download
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $full_filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        // Add BOM for UTF-8 (helps with Excel compatibility)
+        echo "\xEF\xBB\xBF";
+        
+        // Generate CSV content
+        $this->generate_backup_csv_content($bookings);
+        exit;
+    }
+    
+    /**
+     * Generate CSV content for backup
+     */
+    private function generate_backup_csv_content($bookings) {
+        $settings = get_option('easy_bookinger_settings', array());
+        $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
+        
+        // Create header row
+        $headers = array(
+            __('ID', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('予約日', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('時間', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('氏名', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('メール', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('電話', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('コメント', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('ステータス', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('登録日時', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('更新日時', EASY_BOOKINGER_TEXT_DOMAIN)
+        );
+        
+        // Add custom field headers
+        foreach ($booking_fields as $field) {
+            if (!in_array($field['name'], array('user_name', 'email', 'email_confirm', 'phone', 'comment', 'booking_time'))) {
+                $headers[] = $field['label'];
+            }
+        }
+        
+        // Open output stream
+        $output = fopen('php://output', 'w');
+        
+        // Write header row
+        fputcsv($output, $headers);
+        
+        // Write data rows
+        foreach ($bookings as $booking) {
+            $form_data = maybe_unserialize($booking->form_data);
+            
+            $row_data = array(
+                $booking->id,
+                $booking->booking_date,
+                $booking->booking_time,
+                $booking->user_name,
+                $booking->email,
+                $booking->phone,
+                $booking->comment,
+                $booking->status === 'active' ? __('有効', EASY_BOOKINGER_TEXT_DOMAIN) : __('無効', EASY_BOOKINGER_TEXT_DOMAIN),
+                $booking->created_at,
+                $booking->updated_at
+            );
+            
+            // Add custom field data
+            foreach ($booking_fields as $field) {
+                if (!in_array($field['name'], array('user_name', 'email', 'email_confirm', 'phone', 'comment', 'booking_time'))) {
+                    $value = isset($form_data[$field['name']]) ? $form_data[$field['name']] : '';
+                    $row_data[] = $value;
+                }
+            }
+            
+            fputcsv($output, $row_data);
+        }
+        
+        fclose($output);
     }
     
     /**
