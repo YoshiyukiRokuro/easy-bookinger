@@ -736,7 +736,7 @@ class EasyBookinger_Backup {
                 echo '<p>' . __('ファイルをサーバーに保存しました。下記のリンクからダウンロードできます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p>';
                 echo '<p><a href="' . esc_url($download_url) . '" class="button button-primary" target="_blank">';
                 echo esc_html($unique_filename) . ' をダウンロード</a></p>';
-                echo '<p><small>' . __('※ このファイルは30日後に自動削除されます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</small></p>';
+                
                 echo '</div>';
             });
             
@@ -793,7 +793,7 @@ class EasyBookinger_Backup {
                 echo '<p>' . __('ファイルをサーバーに保存しました。下記のリンクからダウンロードできます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p>';
                 echo '<p><a href="' . esc_url($download_url) . '" class="button button-primary" target="_blank">';
                 echo esc_html($unique_filename) . ' をダウンロード</a></p>';
-                echo '<p><small>' . __('※ このファイルは30日後に自動削除されます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</small></p>';
+                
                 echo '</div>';
             });
             

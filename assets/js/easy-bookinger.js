@@ -562,11 +562,10 @@
                 successHtml += '</div>';
                 successHtml += '<div class="eb-booking-time">';
                 successHtml += '<strong>⏰ 時間:</strong> ';
-                if (data.time_slot) {
-                    successHtml += data.time_slot;
-                } else if (data.booking_time) {
-                    successHtml += data.booking_time;
-                }
+                
+                // Prioritize time_slot over booking_time to avoid duplication
+                var timeValue = data.time_slot || data.booking_time;
+                successHtml += timeValue;
             }
             
             successHtml += '</div>';

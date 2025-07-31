@@ -89,14 +89,119 @@ easy-bookinger/
 
 ## データベース構造
 
-### easy_bookinger_bookings
+### プラグインで使用されるテーブル
+
+プラグインは以下のデータベーステーブルを作成・使用します：
+
+#### easy_bookinger_bookings
 予約データを管理するメインテーブル
+- `id` (bigint, AUTO_INCREMENT, PRIMARY KEY) - 予約ID
+- `booking_date` (date, NOT NULL) - 予約日
+- `booking_time` (varchar(20)) - 予約時間
+- `user_name` (varchar(255), NOT NULL) - 予約者氏名
+- `email` (varchar(255), NOT NULL) - 予約者メールアドレス
+- `phone` (varchar(50)) - 電話番号
+- `comment` (text) - コメント
+- `form_data` (longtext) - フォームデータ（シリアル化）
+- `status` (varchar(20), DEFAULT 'active') - ステータス（active/inactive）
+- `created_at` (datetime, DEFAULT CURRENT_TIMESTAMP) - 作成日時
+- `updated_at` (datetime, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) - 更新日時
 
-### easy_bookinger_settings  
+#### easy_bookinger_settings  
 プラグイン設定を保存
+- WordPress optionsテーブルに `easy_bookinger_settings` として保存
 
-### easy_bookinger_pdf_links
-PDFダウンロードリンクを管理
+#### easy_bookinger_date_restrictions
+日付制限情報を管理
+- `id` (bigint, AUTO_INCREMENT, PRIMARY KEY) - 制限ID
+- `restricted_date` (date, NOT NULL) - 制限日
+- `restriction_type` (varchar(50), NOT NULL) - 制限タイプ（holiday/maintenance等）
+- `reason` (varchar(255)) - 制限理由
+- `created_at` (datetime, DEFAULT CURRENT_TIMESTAMP) - 作成日時
+
+#### easy_bookinger_booking_quotas
+日別予約枠数を管理
+- `id` (bigint, AUTO_INCREMENT, PRIMARY KEY) - 枠設定ID
+- `quota_date` (date, NOT NULL) - 対象日
+- `max_bookings` (int, NOT NULL) - 最大予約数
+- `created_at` (datetime, DEFAULT CURRENT_TIMESTAMP) - 作成日時
+
+#### easy_bookinger_time_slots
+時間帯設定を管理
+- `id` (bigint, AUTO_INCREMENT, PRIMARY KEY) - 時間帯ID
+- `start_time` (time, NOT NULL) - 開始時間
+- `slot_name` (varchar(100), NOT NULL) - 時間帯名
+- `max_bookings` (int, DEFAULT 1) - 最大予約数
+- `is_active` (boolean, DEFAULT true) - 有効フラグ
+- `created_at` (datetime, DEFAULT CURRENT_TIMESTAMP) - 作成日時
+
+#### easy_bookinger_special_availability
+臨時予約可能日を管理
+- `id` (bigint, AUTO_INCREMENT, PRIMARY KEY) - 設定ID
+- `special_date` (date, NOT NULL) - 臨時開放日
+- `reason` (varchar(255)) - 理由
+- `max_bookings` (int, DEFAULT 1) - 最大予約数
+- `created_at` (datetime, DEFAULT CURRENT_TIMESTAMP) - 作成日時
+
+#### easy_bookinger_admin_emails
+管理者メールアドレスを管理
+- `id` (bigint, AUTO_INCREMENT, PRIMARY KEY) - メールID
+- `email_address` (varchar(255), NOT NULL) - メールアドレス
+- `notification_types` (text) - 通知タイプ（シリアル化配列）
+- `is_active` (boolean, DEFAULT true) - 有効フラグ
+- `created_at` (datetime, DEFAULT CURRENT_TIMESTAMP) - 作成日時
+
+## プラグインが使用するディレクトリ
+
+### ファイル・ディレクトリ構造詳細
+
+#### /wp-content/easy-bookinger/
+プラグインが動的に作成・使用するディレクトリ
+- **exports/** - エクスポート・バックアップファイル保存先
+  - `.htaccess` - 直接アクセス制限ファイル
+  - `index.php` - ディレクトリリスティング防止ファイル
+  - 各種エクスポート・バックアップファイル（CSV、JSON）
+
+#### プラグインディレクトリ構造
+```
+/wp-content/plugins/easy-bookinger/
+├── easy-bookinger.php          # メインプラグインファイル（エントリーポイント）
+├── includes/                   # コア機能クラス
+│   ├── class-database.php     # データベース操作・テーブル管理
+│   ├── class-shortcode.php    # ショートコード処理
+│   ├── class-ajax.php         # AJAX リクエスト処理
+│   ├── class-email.php        # メール送信機能
+│   └── class-file-manager.php # ファイル管理（エクスポート・バックアップ）
+├── admin/                      # 管理画面機能
+│   ├── class-admin.php        # 管理画面メインクラス
+│   ├── class-settings.php     # 設定画面
+│   ├── class-export.php       # エクスポート機能
+│   └── class-backup.php       # バックアップ・復元機能
+├── public/                     # フロントエンド機能
+│   └── class-public.php       # 公開画面処理
+├── assets/                     # 静的リソース
+│   ├── css/                   # スタイルシート
+│   ├── js/                    # JavaScript
+│   │   ├── easy-bookinger.js      # メインカレンダーJS
+│   │   └── easy-bookinger-admin.js # 管理画面JS
+│   └── images/                # 画像ファイル
+├── languages/                  # 多言語対応
+│   └── easy-bookinger-ja.po   # 日本語翻訳ファイル
+├── examples/                   # 実装例・サンプルコード
+│   ├── functions.php          # functions.php への記述例
+│   └── page-booking.php       # カスタムページテンプレート例
+└── vendor/                     # 外部ライブラリ（必要に応じて）
+    └── tcpdf/                 # PDF生成ライブラリ（オプション）
+```
+
+### ディレクトリの用途
+
+- **includes/**: プラグインのコア機能を提供するクラスファイル
+- **admin/**: WordPress管理画面で使用される機能
+- **public/**: フロントエンド（サイト訪問者向け）で使用される機能
+- **assets/**: CSS、JavaScript、画像などの静的ファイル
+- **languages/**: 多言語対応のための翻訳ファイル
+- **examples/**: 開発者向けの実装例とサンプルコード
 
 ## カスタマイズ
 

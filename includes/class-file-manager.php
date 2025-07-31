@@ -96,7 +96,7 @@ class EasyBookinger_File_Manager {
             'type' => $type,
             'size' => $size,
             'created' => time(),
-            'expires' => time() + (30 * 24 * 60 * 60) // 30 days
+            'expires' => 0 // No expiration
         );
         
         update_option('easy_bookinger_stored_files', $files);
@@ -121,7 +121,7 @@ class EasyBookinger_File_Manager {
             }
             
             // Check if expired
-            if (time() > $info['expires']) {
+            if ($info['expires'] > 0 && time() > $info['expires']) {
                 // Mark for cleanup but don't remove here
                 continue;
             }
@@ -260,7 +260,7 @@ class EasyBookinger_File_Manager {
         
         foreach ($files as $filename => $info) {
             // Check if expired or file doesn't exist
-            if (time() > $info['expires'] || !file_exists($info['path'])) {
+            if (($info['expires'] > 0 && time() > $info['expires']) || !file_exists($info['path'])) {
                 // Delete physical file if it exists
                 if (file_exists($info['path'])) {
                     unlink($info['path']);
@@ -298,7 +298,6 @@ class EasyBookinger_File_Manager {
                     <th><?php _e('タイプ', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                     <th><?php _e('サイズ', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                     <th><?php _e('作成日時', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                    <th><?php _e('有効期限', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                     <?php if ($show_actions): ?>
                     <th><?php _e('操作', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                     <?php endif; ?>
@@ -319,7 +318,6 @@ class EasyBookinger_File_Manager {
                     </td>
                     <td><?php echo esc_html(size_format($info['size'])); ?></td>
                     <td><?php echo esc_html(date('Y/m/d H:i', $info['created'])); ?></td>
-                    <td><?php echo esc_html(date('Y/m/d H:i', $info['expires'])); ?></td>
                     <?php if ($show_actions): ?>
                     <td>
                         <a href="<?php echo esc_url(self::get_download_url($filename)); ?>" 

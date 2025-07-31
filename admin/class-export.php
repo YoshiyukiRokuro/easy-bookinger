@@ -481,7 +481,7 @@ class EasyBookinger_Export {
                 echo '<p>' . __('ファイルをサーバーに保存しました。下記のリンクからダウンロードできます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p>';
                 echo '<p><a href="' . esc_url($download_url) . '" class="button button-primary" target="_blank">';
                 echo esc_html($unique_filename) . ' をダウンロード</a></p>';
-                echo '<p><small>' . __('※ このファイルは30日後に自動削除されます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</small></p>';
+                
                 echo '</div>';
             });
             
@@ -558,7 +558,7 @@ class EasyBookinger_Export {
         $export_files[$filename] = array(
             'path' => $file_path,
             'created' => time(),
-            'expires' => time() + (30 * 24 * 60 * 60) // 30 days
+            'expires' => 0 // No expiration
         );
         update_option('easy_bookinger_export_files', $export_files);
     }
