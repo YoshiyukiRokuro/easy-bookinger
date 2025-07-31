@@ -162,36 +162,9 @@
     color: #757575;
 }
 
-/* Responsive admin styles */
-@media (max-width: 768px) {
-    .eb-admin-section .form-table,
-    .eb-admin-section .wp-list-table {
-        margin: 10px;
-        width: calc(100% - 20px);
-    }
-    
-    .eb-admin-section .submit {
-        margin: 0 10px 10px 10px;
-    }
-    
-    .wp-list-table {
-        font-size: 14px;
-    }
-    
-    .wp-list-table th,
-    .wp-list-table td {
-        padding: 8px 4px;
-    }
-}
-
-.status-active {
-    background: #d4edda;
-    color: #155724;
-}
-
-.status-inactive {
-    background: #f8d7da;
-    color: #721c24;
+/* Sortable fields styling */
+.sortable-fields {
+    min-height: 50px;
 }
 
 .booking-field-row {
@@ -200,6 +173,42 @@
     border-radius: 5px;
     padding: 20px;
     margin-bottom: 20px;
+    position: relative;
+    cursor: move;
+}
+
+.booking-field-row:hover {
+    border-color: #0073aa;
+}
+
+.field-handle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #666;
+    cursor: grab;
+    padding: 5px;
+}
+
+.field-handle:hover {
+    color: #0073aa;
+}
+
+.field-handle:active {
+    cursor: grabbing;
+}
+
+.field-placeholder {
+    background: #e1f5fe;
+    border: 2px dashed #0073aa;
+    border-radius: 5px;
+    height: 100px;
+    margin-bottom: 20px;
+}
+
+.ui-sortable-helper {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: rotate(2deg);
 }
 
 .booking-field-row hr {
@@ -288,8 +297,27 @@
     color: #0073aa;
 }
 
-/* Responsive Admin */
+/* Responsive admin styles */
 @media (max-width: 768px) {
+    .eb-admin-section .form-table,
+    .eb-admin-section .wp-list-table {
+        margin: 10px;
+        width: calc(100% - 20px);
+    }
+    
+    .eb-admin-section .submit {
+        margin: 0 10px 10px 10px;
+    }
+    
+    .wp-list-table {
+        font-size: 14px;
+    }
+    
+    .wp-list-table th,
+    .wp-list-table td {
+        padding: 8px 4px;
+    }
+    
     .eb-statistics {
         flex-direction: column;
     }
@@ -304,6 +332,12 @@
     
     .eb-export-section {
         padding: 15px;
+    }
+    
+    .field-handle {
+        position: static;
+        float: right;
+        margin-bottom: 10px;
     }
 }
 

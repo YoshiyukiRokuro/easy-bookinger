@@ -130,7 +130,7 @@ class EasyBookinger_Admin {
         wp_enqueue_script(
             'easy-bookinger-admin',
             EASY_BOOKINGER_PLUGIN_URL . 'assets/js/easy-bookinger-admin.js',
-            array('jquery'),
+            array('jquery', 'jquery-ui-sortable'),
             EASY_BOOKINGER_VERSION,
             true
         );
@@ -168,6 +168,10 @@ class EasyBookinger_Admin {
             'limit' => 50
         ));
         
+        // Get form fields for dynamic headers
+        $settings = get_option('easy_bookinger_settings', array());
+        $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
+        
         ?>
         <div class="wrap">
             <h1><?php _e('Easy Bookinger - 予約管理', EASY_BOOKINGER_TEXT_DOMAIN); ?></h1>
@@ -187,10 +191,12 @@ class EasyBookinger_Admin {
                         <tr>
                             <th><?php _e('ID', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             <th><?php _e('予約日', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                            <th><?php _e('時間', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                            <th><?php _e('氏名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                            <th><?php _e('メール', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                            <th><?php _e('電話', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                            <th><?php _e('予約時間', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                            <?php foreach ($booking_fields as $field): ?>
+                                <?php if ($field['name'] !== 'email_confirm'): ?>
+                                <th><?php echo esc_html($field['label']); ?></th>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
                             <th><?php _e('ステータス', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             <th><?php _e('登録日', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             <th><?php _e('操作', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
@@ -202,9 +208,28 @@ class EasyBookinger_Admin {
                             <td><?php echo esc_html($booking->id); ?></td>
                             <td><?php echo esc_html(date('Y/m/d', strtotime($booking->booking_date))); ?></td>
                             <td><?php echo esc_html($this->format_booking_time($booking->booking_time)); ?></td>
-                            <td><?php echo esc_html($booking->user_name); ?></td>
-                            <td><a href="mailto:<?php echo esc_attr($booking->email); ?>"><?php echo esc_html($booking->email); ?></a></td>
-                            <td><?php echo esc_html($booking->phone); ?></td>
+                            <?php 
+                            $form_data = maybe_unserialize($booking->form_data);
+                            foreach ($booking_fields as $field): 
+                                if ($field['name'] !== 'email_confirm'):
+                            ?>
+                                <td>
+                                    <?php 
+                                    if (isset($form_data[$field['name']])) {
+                                        if ($field['type'] === 'email') {
+                                            echo '<a href="mailto:' . esc_attr($form_data[$field['name']]) . '">' . esc_html($form_data[$field['name']]) . '</a>';
+                                        } else {
+                                            echo esc_html($form_data[$field['name']]);
+                                        }
+                                    } else {
+                                        echo '-';
+                                    }
+                                    ?>
+                                </td>
+                            <?php 
+                                endif;
+                            endforeach; 
+                            ?>
                             <td>
                                 <?php
                                 $status_class = $booking->status === 'active' ? 'status-active' : 'status-inactive';
@@ -226,7 +251,7 @@ class EasyBookinger_Admin {
                                     <?php _e('有効化', EASY_BOOKINGER_TEXT_DOMAIN); ?>
                                 </a>
                                 <?php endif; ?>
-                                <a href="<?php echo esc_url(add_query_arg(array('action' => 'delete', 'booking_id' => $booking->id, '_wpnonce' => wp_create_nonce('easy_bookinger_admin_action_' . $booking->id)))); ?>" class="button button-small button-link-delete">>
+                                <a href="<?php echo esc_url(add_query_arg(array('action' => 'delete', 'booking_id' => $booking->id, '_wpnonce' => wp_create_nonce('easy_bookinger_admin_action_' . $booking->id)))); ?>" class="button button-small button-link-delete">
                                     <?php _e('削除', EASY_BOOKINGER_TEXT_DOMAIN); ?>
                                 </a>
                             </td>

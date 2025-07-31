@@ -19,6 +19,20 @@
     function initFieldManagement() {
         var fieldIndex = $('.booking-field-row').length;
         
+        // Initialize sortable functionality for field reordering
+        if (typeof $.fn.sortable !== 'undefined') {
+            $('#booking-fields-container').sortable({
+                handle: '.field-handle',
+                placeholder: 'field-placeholder',
+                tolerance: 'pointer',
+                axis: 'y',
+                update: function(event, ui) {
+                    // Update indices after reordering
+                    updateFieldIndices();
+                }
+            });
+        }
+        
         // Add new field
         $('#add-field').on('click', function() {
             var fieldHtml = createFieldHtml(fieldIndex);
@@ -37,7 +51,10 @@
                 return false;
             }
             
-            $fieldRow.remove();
+            if (confirm('この項目を削除しますか？')) {
+                $fieldRow.remove();
+                updateFieldIndices();
+            }
         });
         
         // Add admin email
@@ -59,9 +76,25 @@
         });
     }
     
+    function updateFieldIndices() {
+        $('#booking-fields-container .booking-field-row').each(function(index) {
+            $(this).attr('data-index', index);
+            $(this).find('input, select').each(function() {
+                var name = $(this).attr('name');
+                if (name && name.includes('booking_fields[')) {
+                    var newName = name.replace(/booking_fields\[\d+\]/, 'booking_fields[' + index + ']');
+                    $(this).attr('name', newName);
+                }
+            });
+        });
+    }
+    
     function createFieldHtml(index) {
         return `
         <div class="booking-field-row" data-index="${index}">
+            <div class="field-handle">
+                <span class="dashicons dashicons-sort"></span>
+            </div>
             <table class="form-table">
                 <tr>
                     <th>項目名</th>

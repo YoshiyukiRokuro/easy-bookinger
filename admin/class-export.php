@@ -14,6 +14,18 @@ class EasyBookinger_Export {
      * Render export page
      */
     public function render_export_page() {
+        // Show success message if redirected after export
+        if (isset($_GET['export_success']) && $_GET['export_success'] === '1') {
+            $filename = isset($_GET['filename']) ? sanitize_text_field($_GET['filename']) : '';
+            echo '<div class="notice notice-success is-dismissible">';
+            echo '<p><strong>' . __('エクスポートが完了しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</strong></p>';
+            echo '<p>' . __('ファイルを保存しました。下記の「保存済みエクスポートファイル」セクションからダウンロードできます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p>';
+            if ($filename) {
+                echo '<p>' . __('ファイル名:', EASY_BOOKINGER_TEXT_DOMAIN) . ' <code>' . esc_html($filename) . '</code></p>';
+            }
+            echo '</div>';
+        }
+        
         // Handle file deletion
         if (isset($_POST['action']) && $_POST['action'] === 'delete_file') {
             $this->handle_file_deletion();
@@ -171,13 +183,14 @@ class EasyBookinger_Export {
         $result = EasyBookinger_File_Manager::save_file($csv_content, $filename, 'export');
         
         if ($result['success']) {
-            add_action('admin_notices', function() use ($result) {
-                echo '<div class="notice notice-success is-dismissible">';
-                echo '<p><strong>' . __('エクスポートが完了しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</strong></p>';
-                echo '<p>' . __('ファイルを保存しました。下記の「保存済みエクスポートファイル」セクションからダウンロードできます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p>';
-                echo '<p>' . __('ファイル名:', EASY_BOOKINGER_TEXT_DOMAIN) . ' <code>' . esc_html($result['filename']) . '</code></p>';
-                echo '</div>';
-            });
+            // Show success notice and redirect to prevent resubmission
+            $redirect_url = add_query_arg(array(
+                'page' => 'easy-bookinger-export',
+                'export_success' => '1',
+                'filename' => urlencode($result['filename'])
+            ), admin_url('admin.php'));
+            wp_redirect($redirect_url);
+            exit;
         } else {
             add_action('admin_notices', function() use ($result) {
                 echo '<div class="notice notice-error is-dismissible"><p>' . __('エクスポート中にエラーが発生しました', EASY_BOOKINGER_TEXT_DOMAIN) . ': ' . esc_html($result['error']) . '</p></div>';
@@ -191,6 +204,7 @@ class EasyBookinger_Export {
     private function generate_csv_content_string($bookings) {
         $settings = get_option('easy_bookinger_settings', array());
         $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
+        $timezone = isset($settings['timezone']) ? $settings['timezone'] : 'Asia/Tokyo';
         
         // Create header row
         $headers = array(
@@ -225,6 +239,18 @@ class EasyBookinger_Export {
         foreach ($bookings as $booking) {
             $form_data = maybe_unserialize($booking->form_data);
             
+            // Convert created_at timestamp to configured timezone
+            $created_datetime = '';
+            if (!empty($booking->created_at)) {
+                try {
+                    $date = new DateTime($booking->created_at, new DateTimeZone('UTC'));
+                    $date->setTimezone(new DateTimeZone($timezone));
+                    $created_datetime = $date->format('Y-m-d H:i:s');
+                } catch (Exception $e) {
+                    $created_datetime = $booking->created_at; // Fallback to original
+                }
+            }
+            
             $row_data = array(
                 $booking->id,
                 $booking->booking_date,
@@ -234,7 +260,7 @@ class EasyBookinger_Export {
                 $booking->phone,
                 $booking->comment,
                 $booking->status === 'active' ? __('有効', EASY_BOOKINGER_TEXT_DOMAIN) : __('無効', EASY_BOOKINGER_TEXT_DOMAIN),
-                $booking->created_at
+                $created_datetime
             );
             
             // Add custom field data

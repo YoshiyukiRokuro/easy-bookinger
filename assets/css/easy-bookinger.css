@@ -792,3 +792,114 @@
     color: #64b5f6;
     border-color: #2196f3;
 }
+
+/* Enhanced Success Modal Styles */
+.eb-booking-info,
+.eb-form-info,
+.eb-email-info,
+.eb-pdf-info {
+    margin: 20px 0;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 4px solid #2e7d32;
+}
+
+.eb-booking-info {
+    background: #e8f5e8;
+    border-left-color: #2e7d32;
+}
+
+.eb-form-info {
+    background: #f3f4f6;
+    border-left-color: #0073aa;
+}
+
+.eb-email-info {
+    background: #e3f2fd;
+    border-left-color: #1976d2;
+}
+
+.eb-booking-info h5,
+.eb-form-info h5,
+.eb-email-info h5,
+.eb-pdf-info h5 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.eb-booking-dates {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2e7d32;
+    margin: 10px 0;
+    line-height: 1.4;
+}
+
+.eb-form-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.eb-form-data-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e0e0e0;
+    vertical-align: top;
+}
+
+.eb-field-label {
+    font-weight: 600;
+    color: #555;
+    width: 30%;
+    min-width: 80px;
+}
+
+.eb-field-value {
+    color: #333;
+}
+
+.eb-form-data-table tr:last-child td {
+    border-bottom: none;
+}
+
+.eb-email-success {
+    color: #2e7d32;
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.eb-email-notice {
+    color: #666;
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+/* Responsive success modal */
+@media (max-width: 768px) {
+    .eb-booking-info,
+    .eb-form-info,
+    .eb-email-info,
+    .eb-pdf-info {
+        margin: 15px 0;
+        padding: 12px;
+    }
+    
+    .eb-form-data-table {
+        font-size: 13px;
+    }
+    
+    .eb-form-data-table td {
+        padding: 6px 8px;
+    }
+    
+    .eb-field-label {
+        width: 35%;
+        font-size: 12px;
+    }
+    
+    .eb-booking-dates {
+        font-size: 14px;
+    }
+}

@@ -184,14 +184,17 @@ class EasyBookinger_Settings {
                 </table>
                 
                 <h2><?php _e('フォーム設定', EASY_BOOKINGER_TEXT_DOMAIN); ?></h2>
-                <p><?php _e('予約フォームの入力項目を設定します。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                <p><?php _e('予約フォームの入力項目を設定します。項目をドラッグ&ドロップで並び替えできます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
                 
-                <div id="booking-fields-container">
+                <div id="booking-fields-container" class="sortable-fields">
                     <?php
                     $booking_fields = $settings['booking_fields'] ?? array();
                     foreach ($booking_fields as $index => $field):
                     ?>
                     <div class="booking-field-row" data-index="<?php echo esc_attr($index); ?>">
+                        <div class="field-handle">
+                            <span class="dashicons dashicons-sort"></span>
+                        </div>
                         <table class="form-table">
                             <tr>
                                 <th><?php _e('項目名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>

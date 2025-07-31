@@ -166,21 +166,39 @@ class EasyBookinger_Ajax {
         
         // Send emails
         $email_handler = new EasyBookinger_Email();
+        $email_sent = array(
+            'admin' => false,
+            'user' => false
+        );
         
         // Send admin notification
         if (isset($settings['admin_email_enabled']) && $settings['admin_email_enabled']) {
-            $email_handler->send_admin_notification($booking_ids[0]);
+            $email_sent['admin'] = $email_handler->send_admin_notification($booking_ids[0]);
         }
         
         // Send user confirmation
         if (isset($settings['user_email_enabled']) && $settings['user_email_enabled']) {
-            $email_handler->send_user_confirmation($booking_ids[0]);
+            $email_sent['user'] = $email_handler->send_user_confirmation($booking_ids[0]);
+        }
+        
+        // Prepare form data for display (exclude confirmation fields)
+        $display_form_data = array();
+        foreach ($booking_fields as $field) {
+            if ($field['name'] !== 'email_confirm' && isset($form_data[$field['name']])) {
+                $display_form_data[] = array(
+                    'label' => $field['label'],
+                    'value' => $form_data[$field['name']]
+                );
+            }
         }
         
         wp_send_json_success(array(
             'message' => __('予約が完了しました', EASY_BOOKINGER_TEXT_DOMAIN),
             'booking_ids' => $booking_ids,
-            'booking_dates' => $booking_dates
+            'booking_dates' => $booking_dates,
+            'form_data' => $display_form_data,
+            'email_sent' => $email_sent,
+            'time_slot' => $time_slot_id ? $this->get_time_slot_name($time_slot_id) : null
         ));
     }
     
@@ -397,5 +415,29 @@ class EasyBookinger_Ajax {
         }
         
         return $errors;
+    }
+    
+    /**
+     * Get time slot name by ID
+     */
+    private function get_time_slot_name($time_slot_id) {
+        if (empty($time_slot_id)) {
+            return null;
+        }
+        
+        $database = EasyBookinger_Database::instance();
+        global $wpdb;
+        $slots_table = $wpdb->prefix . 'easy_bookinger_time_slots';
+        
+        $slot = $wpdb->get_row($wpdb->prepare(
+            "SELECT slot_name, start_time FROM $slots_table WHERE id = %d AND status = 'active'",
+            $time_slot_id
+        ));
+        
+        if ($slot) {
+            return $slot->slot_name ?: date('H:i', strtotime($slot->start_time));
+        }
+        
+        return null;
     }
 }
