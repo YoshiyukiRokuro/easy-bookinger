@@ -59,9 +59,21 @@ final class EasyBookinger {
         add_action('init', array($this, 'init'));
         add_action('plugins_loaded', array($this, 'load_textdomain'));
         
+        // File download handler
+        add_action('admin_init', array($this, 'handle_file_downloads'));
+        
         // Activation and deactivation hooks
         register_activation_hook(__FILE__, array($this, 'activate'));
         register_deactivation_hook(__FILE__, array($this, 'deactivate'));
+    }
+    
+    /**
+     * Handle file downloads
+     */
+    public function handle_file_downloads() {
+        if (isset($_GET['action']) && $_GET['action'] === 'easy_bookinger_download_file') {
+            EasyBookinger_File_Manager::handle_download();
+        }
     }
     
     /**
@@ -81,6 +93,7 @@ final class EasyBookinger {
         require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-shortcode.php';
         require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-ajax.php';
         require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-email.php';
+        require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-file-manager.php';
         
         // Admin includes
         if (is_admin()) {

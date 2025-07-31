@@ -14,6 +14,11 @@ class EasyBookinger_Backup {
      * Render backup page
      */
     public function render_backup_page() {
+        // Handle file deletion
+        if (isset($_POST['action']) && $_POST['action'] === 'delete_file') {
+            $this->handle_file_deletion();
+        }
+        
         // Handle backup actions
         if (isset($_POST['create_backup'])) {
             $this->create_backup();
@@ -29,7 +34,7 @@ class EasyBookinger_Backup {
             
             <div class="eb-backup-section">
                 <h2><?php _e('バックアップの作成', EASY_BOOKINGER_TEXT_DOMAIN); ?></h2>
-                <p><?php _e('現在の予約データをバックアップファイルとしてダウンロードできます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                <p><?php _e('現在の予約データをバックアップファイルとして保存できます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
                 
                 <form method="post" action="">
                     <?php wp_nonce_field('easy_bookinger_backup', 'easy_bookinger_backup_nonce'); ?>
@@ -96,6 +101,17 @@ class EasyBookinger_Backup {
                     
                     <?php submit_button(__('バックアップファイルを作成', EASY_BOOKINGER_TEXT_DOMAIN), 'primary', 'create_backup'); ?>
                 </form>
+            </div>
+            
+            <div class="eb-backup-section">
+                <h2><?php _e('保存済みバックアップファイル', EASY_BOOKINGER_TEXT_DOMAIN); ?></h2>
+                <p><?php _e('以前に作成されたバックアップファイルの一覧です。ダウンロードまたは削除することができます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                <?php 
+                // Cleanup expired files first
+                EasyBookinger_File_Manager::cleanup_expired_files();
+                // Render file list
+                EasyBookinger_File_Manager::render_file_list('backup'); 
+                ?>
             </div>
             
             <div class="eb-backup-section">
@@ -223,13 +239,25 @@ class EasyBookinger_Backup {
         // Generate filename
         $full_filename = $filename . '.json';
         
-        // Try direct download first
-        if ($this->try_direct_json_download($backup_data, $full_filename)) {
-            return;
-        }
+        // Generate JSON content
+        $json_content = json_encode($backup_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         
-        // Fallback: Save to server and provide download link
-        $this->save_json_to_server_and_notify($backup_data, $full_filename);
+        // Save file using file manager
+        $result = EasyBookinger_File_Manager::save_file($json_content, $full_filename, 'backup');
+        
+        if ($result['success']) {
+            add_action('admin_notices', function() use ($result) {
+                echo '<div class="notice notice-success is-dismissible">';
+                echo '<p><strong>' . __('バックアップが完了しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</strong></p>';
+                echo '<p>' . __('ファイルを保存しました。下記の「保存済みバックアップファイル」セクションからダウンロードできます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p>';
+                echo '<p>' . __('ファイル名:', EASY_BOOKINGER_TEXT_DOMAIN) . ' <code>' . esc_html($result['filename']) . '</code></p>';
+                echo '</div>';
+            });
+        } else {
+            add_action('admin_notices', function() use ($result) {
+                echo '<div class="notice notice-error is-dismissible"><p>' . __('バックアップ中にエラーが発生しました', EASY_BOOKINGER_TEXT_DOMAIN) . ': ' . esc_html($result['error']) . '</p></div>';
+            });
+        }
     }
     
     /**
@@ -258,13 +286,120 @@ class EasyBookinger_Backup {
         // Generate filename
         $full_filename = $filename . '.csv';
         
-        // Try direct download first
-        if ($this->try_direct_csv_download($bookings, $full_filename)) {
-            return;
+        // Generate CSV content
+        $csv_content = $this->generate_backup_csv_content_string($bookings);
+        
+        // Save file using file manager
+        $result = EasyBookinger_File_Manager::save_file($csv_content, $full_filename, 'backup');
+        
+        if ($result['success']) {
+            add_action('admin_notices', function() use ($result) {
+                echo '<div class="notice notice-success is-dismissible">';
+                echo '<p><strong>' . __('バックアップが完了しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</strong></p>';
+                echo '<p>' . __('ファイルを保存しました。下記の「保存済みバックアップファイル」セクションからダウンロードできます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p>';
+                echo '<p>' . __('ファイル名:', EASY_BOOKINGER_TEXT_DOMAIN) . ' <code>' . esc_html($result['filename']) . '</code></p>';
+                echo '</div>';
+            });
+        } else {
+            add_action('admin_notices', function() use ($result) {
+                echo '<div class="notice notice-error is-dismissible"><p>' . __('バックアップ中にエラーが発生しました', EASY_BOOKINGER_TEXT_DOMAIN) . ': ' . esc_html($result['error']) . '</p></div>';
+            });
+        }
+    }
+    
+    /**
+     * Generate CSV content for backup as string
+     */
+    private function generate_backup_csv_content_string($bookings) {
+        $settings = get_option('easy_bookinger_settings', array());
+        $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
+        
+        // Create header row
+        $headers = array(
+            __('ID', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('予約日', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('時間', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('氏名', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('メール', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('電話', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('コメント', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('ステータス', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('登録日時', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('更新日時', EASY_BOOKINGER_TEXT_DOMAIN)
+        );
+        
+        // Add custom field headers
+        foreach ($booking_fields as $field) {
+            if (!in_array($field['name'], array('user_name', 'email', 'email_confirm', 'phone', 'comment', 'booking_time'))) {
+                $headers[] = $field['label'];
+            }
         }
         
-        // Fallback: Save to server and provide download link
-        $this->save_csv_to_server_and_notify($bookings, $full_filename);
+        // Start with BOM for UTF-8 (helps with Excel compatibility)
+        $csv_content = "\xEF\xBB\xBF";
+        
+        // Create CSV content using memory stream
+        $stream = fopen('php://memory', 'r+');
+        
+        // Write header row
+        fputcsv($stream, $headers);
+        
+        // Write data rows
+        foreach ($bookings as $booking) {
+            $form_data = maybe_unserialize($booking->form_data);
+            
+            $row_data = array(
+                $booking->id,
+                $booking->booking_date,
+                $booking->booking_time,
+                $booking->user_name,
+                $booking->email,
+                $booking->phone,
+                $booking->comment,
+                $booking->status === 'active' ? __('有効', EASY_BOOKINGER_TEXT_DOMAIN) : __('無効', EASY_BOOKINGER_TEXT_DOMAIN),
+                $booking->created_at,
+                $booking->updated_at
+            );
+            
+            // Add custom field data
+            foreach ($booking_fields as $field) {
+                if (!in_array($field['name'], array('user_name', 'email', 'email_confirm', 'phone', 'comment', 'booking_time'))) {
+                    $value = isset($form_data[$field['name']]) ? $form_data[$field['name']] : '';
+                    $row_data[] = $value;
+                }
+            }
+            
+            fputcsv($stream, $row_data);
+        }
+        
+        // Get the content
+        rewind($stream);
+        $csv_content .= stream_get_contents($stream);
+        fclose($stream);
+        
+        return $csv_content;
+    }
+    
+    /**
+     * Handle file deletion
+     */
+    private function handle_file_deletion() {
+        if (!wp_verify_nonce($_POST['delete_file_nonce'], 'easy_bookinger_delete_file')) {
+            wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
+        }
+        
+        $filename = sanitize_file_name($_POST['filename']);
+        $result = EasyBookinger_File_Manager::delete_file($filename);
+        
+        if ($result['success']) {
+            add_action('admin_notices', function() use ($result) {
+                echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($result['message']) . '</p></div>';
+            });
+        } else {
+            add_action('admin_notices', function() use ($result) {
+                echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($result['error']) . '</p></div>';
+            });
+        }
     }
     
     /**

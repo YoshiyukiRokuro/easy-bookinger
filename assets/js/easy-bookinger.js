@@ -408,6 +408,13 @@
                 }
             });
             
+            // Frontend validation
+            var validationErrors = this.validateForm(formData);
+            if (validationErrors.length > 0) {
+                this.showValidationErrors(validationErrors);
+                return;
+            }
+            
             // Show loading
             this.showLoading();
             
@@ -436,6 +443,80 @@
                     toastr.error(easyBookinger.text.bookingError);
                 }
             });
+        },
+        
+        validateForm: function(formData) {
+            var errors = [];
+            var bookingFields = this.settings.bookingFields || [];
+            
+            for (var i = 0; i < bookingFields.length; i++) {
+                var field = bookingFields[i];
+                var value = formData[field.name] || '';
+                
+                // Check required fields
+                if (field.required && (!value || value.trim() === '')) {
+                    errors.push({
+                        field: field.name,
+                        message: field.label + 'は必須項目です'
+                    });
+                    continue;
+                }
+                
+                // Skip further validation if field is empty and not required
+                if (!value || value.trim() === '') {
+                    continue;
+                }
+                
+                // Email validation
+                if (field.type === 'email' && !this.isValidEmail(value)) {
+                    errors.push({
+                        field: field.name,
+                        message: field.label + 'の形式が正しくありません'
+                    });
+                }
+                
+                // Length validation
+                if (field.maxlength && value.length > field.maxlength) {
+                    errors.push({
+                        field: field.name,
+                        message: field.label + 'は' + field.maxlength + '文字以内で入力してください'
+                    });
+                }
+            }
+            
+            // Email confirmation validation
+            if (formData.email && formData.email_confirm) {
+                if (formData.email !== formData.email_confirm) {
+                    errors.push({
+                        field: 'email_confirm',
+                        message: 'メールアドレスが一致しません'
+                    });
+                }
+            }
+            
+            return errors;
+        },
+        
+        isValidEmail: function(email) {
+            var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        },
+        
+        showValidationErrors: function(errors) {
+            // Clear previous errors
+            $('.eb-form-field').removeClass('has-error');
+            $('.eb-error').remove();
+            
+            for (var i = 0; i < errors.length; i++) {
+                var error = errors[i];
+                var $field = $('[name="' + error.field + '"]');
+                var $fieldContainer = $field.closest('.eb-form-field');
+                
+                $fieldContainer.addClass('has-error');
+                $fieldContainer.append('<div class="eb-error">' + error.message + '</div>');
+            }
+            
+            toastr.error('入力内容に誤りがあります');
         },
         
         showSuccessModal: function(data) {
