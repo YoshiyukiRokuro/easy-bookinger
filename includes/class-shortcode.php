@@ -167,8 +167,7 @@ class EasyBookinger_Shortcode {
                 $time_slots[] = array(
                     'id' => $slot->id,
                     'start_time' => $slot->start_time,
-                    'end_time' => $slot->end_time,
-                    'slot_name' => $slot->slot_name ?: (date('H:i', strtotime($slot->start_time)) . '-' . date('H:i', strtotime($slot->end_time))),
+                    'slot_name' => $slot->slot_name ?: date('H:i', strtotime($slot->start_time)),
                     'max_bookings' => $slot->max_bookings
                 );
             }
@@ -239,15 +238,14 @@ class EasyBookinger_Shortcode {
                         <div class="eb-form-section">
                             <h4><?php _e('時間帯選択', EASY_BOOKINGER_TEXT_DOMAIN); ?></h4>
                             <div class="eb-time-slots">
-                                <?php foreach ($time_slots as $slot): ?>
-                                <label class="eb-time-slot-option">
-                                    <input type="radio" name="booking_time_slot" value="<?php echo esc_attr($slot['id']); ?>">
-                                    <span class="eb-time-slot-label">
-                                        <?php echo esc_html($slot['slot_name']); ?>
-                                        <small class="eb-time-slot-info">(最大<?php echo esc_html($slot['max_bookings']); ?>名)</small>
-                                    </span>
-                                </label>
-                                <?php endforeach; ?>
+                                <select name="booking_time_slot" class="eb-time-slot-select">
+                                    <option value=""><?php _e('時間帯を選択してください', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                    <?php foreach ($time_slots as $slot): ?>
+                                    <option value="<?php echo esc_attr($slot['id']); ?>">
+                                        <?php echo esc_html($slot['slot_name']); ?> (最大<?php echo esc_html($slot['max_bookings']); ?>名)
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
                         <?php endif; ?>

@@ -207,7 +207,7 @@ class EasyBookinger_Admin {
                                     <?php _e('有効化', EASY_BOOKINGER_TEXT_DOMAIN); ?>
                                 </a>
                                 <?php endif; ?>
-                                <a href="<?php echo esc_url(add_query_arg(array('action' => 'delete', 'booking_id' => $booking->id, '_wpnonce' => wp_create_nonce('easy_bookinger_admin_action_' . $booking->id)))); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php _e('本当に削除しますか？', EASY_BOOKINGER_TEXT_DOMAIN); ?>')">
+                                <a href="<?php echo esc_url(add_query_arg(array('action' => 'delete', 'booking_id' => $booking->id, '_wpnonce' => wp_create_nonce('easy_bookinger_admin_action_' . $booking->id)))); ?>" class="button button-small button-link-delete">>
                                     <?php _e('削除', EASY_BOOKINGER_TEXT_DOMAIN); ?>
                                 </a>
                             </td>
@@ -334,7 +334,7 @@ class EasyBookinger_Admin {
                                         <?php wp_nonce_field('eb_restrictions_action', 'eb_restrictions_nonce'); ?>
                                         <input type="hidden" name="action" value="remove_restriction">
                                         <input type="hidden" name="restriction_date" value="<?php echo esc_attr($restriction->restriction_date); ?>">
-                                        <input type="submit" class="button button-small button-link-delete" value="<?php _e('削除', EASY_BOOKINGER_TEXT_DOMAIN); ?>" onclick="return confirm('<?php _e('この制限を削除しますか？', EASY_BOOKINGER_TEXT_DOMAIN); ?>')">
+                                        <input type="submit" class="button button-small button-link-delete" value="<?php _e('削除', EASY_BOOKINGER_TEXT_DOMAIN); ?>">
                                     </form>
                                 </td>
                             </tr>
@@ -567,7 +567,7 @@ class EasyBookinger_Admin {
                                         <?php wp_nonce_field('eb_timeslots_action', 'eb_timeslots_nonce'); ?>
                                         <input type="hidden" name="action" value="delete_timeslot">
                                         <input type="hidden" name="slot_id" value="<?php echo esc_attr($slot->id); ?>">
-                                        <input type="submit" class="button button-small button-link-delete" value="<?php _e('削除', EASY_BOOKINGER_TEXT_DOMAIN); ?>" onclick="return confirm('<?php _e('この時間帯を削除しますか？', EASY_BOOKINGER_TEXT_DOMAIN); ?>')">
+                                        <input type="submit" class="button button-small button-link-delete" value="<?php _e('削除', EASY_BOOKINGER_TEXT_DOMAIN); ?>">
                                     </form>
                                 </td>
                             </tr>
