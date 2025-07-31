@@ -397,6 +397,32 @@
     padding-right: 35px;
 }
 
+/* Ensure all select elements in the plugin have consistent styling */
+.easy-bookinger-container select,
+.eb-modal select {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' fill='%23666'%3E%3Cpath d='M6 7L0 1h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding: 10px 35px 10px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: white;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.easy-bookinger-container select:focus,
+.eb-modal select:focus {
+    outline: none;
+    border-color: #007cba;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
+}
+
 .eb-form-field textarea {
     resize: vertical;
     min-height: 80px;
