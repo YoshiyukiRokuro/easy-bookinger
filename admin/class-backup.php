@@ -223,21 +223,13 @@ class EasyBookinger_Backup {
         // Generate filename
         $full_filename = $filename . '.json';
         
-        // Set headers for download
-        header('Content-Type: application/json; charset=UTF-8');
-        header('Content-Disposition: attachment; filename="' . $full_filename . '"');
-        header('Content-Transfer-Encoding: binary');
-        header('Pragma: no-cache');
-        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-        header('Expires: 0');
-        
-        // Prevent any previous output
-        if (ob_get_level()) {
-            ob_end_clean();
+        // Try direct download first
+        if ($this->try_direct_json_download($backup_data, $full_filename)) {
+            return;
         }
         
-        echo json_encode($backup_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        exit;
+        // Fallback: Save to server and provide download link
+        $this->save_json_to_server_and_notify($backup_data, $full_filename);
     }
     
     /**
@@ -266,25 +258,13 @@ class EasyBookinger_Backup {
         // Generate filename
         $full_filename = $filename . '.csv';
         
-        // Set headers for download
-        header('Content-Type: text/csv; charset=UTF-8');
-        header('Content-Disposition: attachment; filename="' . $full_filename . '"');
-        header('Content-Transfer-Encoding: binary');
-        header('Pragma: no-cache');
-        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-        header('Expires: 0');
-        
-        // Prevent any previous output
-        if (ob_get_level()) {
-            ob_end_clean();
+        // Try direct download first
+        if ($this->try_direct_csv_download($bookings, $full_filename)) {
+            return;
         }
         
-        // Add BOM for UTF-8 (helps with Excel compatibility)
-        echo "\xEF\xBB\xBF";
-        
-        // Generate CSV content
-        $this->generate_backup_csv_content($bookings);
-        exit;
+        // Fallback: Save to server and provide download link
+        $this->save_csv_to_server_and_notify($bookings, $full_filename);
     }
     
     /**
@@ -516,5 +496,236 @@ class EasyBookinger_Backup {
             </tbody>
         </table>
         <?php
+    }
+    
+    /**
+     * Try direct JSON download
+     */
+    private function try_direct_json_download($backup_data, $filename) {
+        // Check if headers have already been sent
+        if (headers_sent()) {
+            return false;
+        }
+        
+        try {
+            // Set headers for download
+            header('Content-Type: application/json; charset=UTF-8');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Content-Transfer-Encoding: binary');
+            header('Pragma: no-cache');
+            header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+            header('Expires: 0');
+            
+            // Prevent any previous output
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            echo json_encode($backup_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            exit;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Try direct CSV download
+     */
+    private function try_direct_csv_download($bookings, $filename) {
+        // Check if headers have already been sent
+        if (headers_sent()) {
+            return false;
+        }
+        
+        try {
+            // Set headers for download
+            header('Content-Type: text/csv; charset=UTF-8');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Content-Transfer-Encoding: binary');
+            header('Pragma: no-cache');
+            header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+            header('Expires: 0');
+            
+            // Prevent any previous output
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Add BOM for UTF-8 (helps with Excel compatibility)
+            echo "\xEF\xBB\xBF";
+            
+            // Generate CSV content
+            $this->generate_backup_csv_content($bookings);
+            exit;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Save JSON to server and provide download link
+     */
+    private function save_json_to_server_and_notify($backup_data, $filename) {
+        // Create exports directory if it doesn't exist
+        $upload_dir = wp_upload_dir();
+        $exports_dir = $upload_dir['basedir'] . '/easy-bookinger-exports';
+        
+        if (!file_exists($exports_dir)) {
+            wp_mkdir_p($exports_dir);
+        }
+        
+        // Add .htaccess to prevent direct access listing
+        $htaccess_file = $exports_dir . '/.htaccess';
+        if (!file_exists($htaccess_file)) {
+            file_put_contents($htaccess_file, "Options -Indexes\n");
+        }
+        
+        // Create unique filename with timestamp
+        $unique_filename = date('Y-m-d_H-i-s') . '_' . $filename;
+        $file_path = $exports_dir . '/' . $unique_filename;
+        
+        try {
+            // Generate JSON content to file
+            $json_content = json_encode($backup_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            
+            if (file_put_contents($file_path, $json_content) === false) {
+                throw new Exception(__('ファイルの作成に失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
+            }
+            
+            // Create download URL
+            $download_url = $upload_dir['baseurl'] . '/easy-bookinger-exports/' . $unique_filename;
+            
+            add_action('admin_notices', function() use ($download_url, $unique_filename) {
+                echo '<div class="notice notice-success is-dismissible">';
+                echo '<p><strong>' . __('バックアップが完了しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</strong></p>';
+                echo '<p>' . __('ファイルをサーバーに保存しました。下記のリンクからダウンロードできます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p>';
+                echo '<p><a href="' . esc_url($download_url) . '" class="button button-primary" target="_blank">';
+                echo esc_html($unique_filename) . ' をダウンロード</a></p>';
+                echo '<p><small>' . __('※ このファイルは30日後に自動削除されます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</small></p>';
+                echo '</div>';
+            });
+            
+        } catch (Exception $e) {
+            add_action('admin_notices', function() use ($e) {
+                echo '<div class="notice notice-error is-dismissible"><p>' . __('バックアップ中にエラーが発生しました', EASY_BOOKINGER_TEXT_DOMAIN) . ': ' . esc_html($e->getMessage()) . '</p></div>';
+            });
+        }
+    }
+    
+    /**
+     * Save CSV to server and provide download link
+     */
+    private function save_csv_to_server_and_notify($bookings, $filename) {
+        // Create exports directory if it doesn't exist
+        $upload_dir = wp_upload_dir();
+        $exports_dir = $upload_dir['basedir'] . '/easy-bookinger-exports';
+        
+        if (!file_exists($exports_dir)) {
+            wp_mkdir_p($exports_dir);
+        }
+        
+        // Add .htaccess to prevent direct access listing
+        $htaccess_file = $exports_dir . '/.htaccess';
+        if (!file_exists($htaccess_file)) {
+            file_put_contents($htaccess_file, "Options -Indexes\n");
+        }
+        
+        // Create unique filename with timestamp
+        $unique_filename = date('Y-m-d_H-i-s') . '_' . $filename;
+        $file_path = $exports_dir . '/' . $unique_filename;
+        
+        try {
+            // Generate CSV content to file
+            $file_handle = fopen($file_path, 'w');
+            
+            if ($file_handle === false) {
+                throw new Exception(__('ファイルの作成に失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
+            }
+            
+            // Add BOM for UTF-8 (helps with Excel compatibility)
+            fwrite($file_handle, "\xEF\xBB\xBF");
+            
+            // Generate CSV content
+            $this->generate_backup_csv_to_file($bookings, $file_handle);
+            fclose($file_handle);
+            
+            // Create download URL
+            $download_url = $upload_dir['baseurl'] . '/easy-bookinger-exports/' . $unique_filename;
+            
+            add_action('admin_notices', function() use ($download_url, $unique_filename) {
+                echo '<div class="notice notice-success is-dismissible">';
+                echo '<p><strong>' . __('バックアップが完了しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</strong></p>';
+                echo '<p>' . __('ファイルをサーバーに保存しました。下記のリンクからダウンロードできます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p>';
+                echo '<p><a href="' . esc_url($download_url) . '" class="button button-primary" target="_blank">';
+                echo esc_html($unique_filename) . ' をダウンロード</a></p>';
+                echo '<p><small>' . __('※ このファイルは30日後に自動削除されます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</small></p>';
+                echo '</div>';
+            });
+            
+        } catch (Exception $e) {
+            add_action('admin_notices', function() use ($e) {
+                echo '<div class="notice notice-error is-dismissible"><p>' . __('バックアップ中にエラーが発生しました', EASY_BOOKINGER_TEXT_DOMAIN) . ': ' . esc_html($e->getMessage()) . '</p></div>';
+            });
+        }
+    }
+    
+    /**
+     * Generate CSV content for backup to file handle
+     */
+    private function generate_backup_csv_to_file($bookings, $file_handle) {
+        $settings = get_option('easy_bookinger_settings', array());
+        $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
+        
+        // Create header row
+        $headers = array(
+            __('ID', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('予約日', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('時間', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('氏名', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('メール', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('電話', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('コメント', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('ステータス', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('登録日時', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('更新日時', EASY_BOOKINGER_TEXT_DOMAIN)
+        );
+        
+        // Add custom field headers
+        foreach ($booking_fields as $field) {
+            if (!in_array($field['name'], array('user_name', 'email', 'email_confirm', 'phone', 'comment', 'booking_time'))) {
+                $headers[] = $field['label'];
+            }
+        }
+        
+        // Write header row
+        fputcsv($file_handle, $headers);
+        
+        // Write data rows
+        foreach ($bookings as $booking) {
+            $form_data = maybe_unserialize($booking->form_data);
+            
+            $row_data = array(
+                $booking->id,
+                $booking->booking_date,
+                $booking->booking_time,
+                $booking->user_name,
+                $booking->email,
+                $booking->phone,
+                $booking->comment,
+                $booking->status === 'active' ? __('有効', EASY_BOOKINGER_TEXT_DOMAIN) : __('無効', EASY_BOOKINGER_TEXT_DOMAIN),
+                $booking->created_at,
+                $booking->updated_at
+            );
+            
+            // Add custom field data
+            foreach ($booking_fields as $field) {
+                if (!in_array($field['name'], array('user_name', 'email', 'email_confirm', 'phone', 'comment', 'booking_time'))) {
+                    $value = isset($form_data[$field['name']]) ? $form_data[$field['name']] : '';
+                    $row_data[] = $value;
+                }
+            }
+            
+            fputcsv($file_handle, $row_data);
+        }
     }
 }

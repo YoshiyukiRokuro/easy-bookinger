@@ -201,6 +201,9 @@
             var remainingQuota = this.quotasData[dateStr] || 0;
             var isQuotaFull = remainingQuota <= 0;
             
+            // Check if same-day booking is disabled and this is today
+            var isSameDayBlocked = isToday && this.settings.allowSameDayBooking === false;
+            
             // Check if date is beyond display months range
             var maxDisplayDate = new Date(today);
             maxDisplayDate.setMonth(maxDisplayDate.getMonth() + this.settings.displayMonths);
@@ -213,7 +216,7 @@
             
             if (isOtherMonth) {
                 classes.push('other-month');
-            } else if (isPast || !isSelectableDay || isRestricted || isQuotaFull || isBeyondDisplayRange) {
+            } else if (isPast || !isSelectableDay || isRestricted || isQuotaFull || isBeyondDisplayRange || isSameDayBlocked) {
                 classes.push('disabled');
                 if (isRestricted) {
                     classes.push('restricted');
@@ -247,6 +250,8 @@
             var statusText = '';
             if (isPast || isRestricted || isBeyondDisplayRange) {
                 statusText = '<div class="eb-day-status unavailable">不可</div>';
+            } else if (isSameDayBlocked) {
+                statusText = '<div class="eb-day-status same-day-blocked">当日不可</div>';
             } else if (!isSelectableDay) {
                 statusText = '<div class="eb-day-status not-allowed">不可</div>';
             } else if (isQuotaFull) {
@@ -357,8 +362,11 @@
                 $formDates.append('<div class="eb-selected-date-item">' + dateText + '</div>');
             }
             
-            // Clear form
-            $('#eb-booking-form')[0].reset();
+            // Clear form with safety check
+            var $form = $('#eb-booking-form');
+            if ($form.length > 0 && $form[0]) {
+                $form[0].reset();
+            }
             $('.eb-form-field').removeClass('has-error');
             $('.eb-error').remove();
             
@@ -471,24 +479,28 @@
         },
         
         showLoading: function() {
-            var loadingHtml = '<div class="eb-loading">';
+            var loadingHtml = '<div class="eb-loading-overlay">';
+            loadingHtml += '<div class="eb-loading">';
             loadingHtml += '<div class="eb-spinner"></div>';
             loadingHtml += '<p>' + easyBookinger.text.loading + '</p>';
             loadingHtml += '</div>';
+            loadingHtml += '</div>';
             
-            $('#eb-booking-modal .eb-modal-content').html(loadingHtml);
+            // Add loading overlay instead of replacing content
+            var $modalContent = $('#eb-booking-modal .eb-modal-content');
+            $modalContent.css('position', 'relative');
+            $modalContent.append(loadingHtml);
         },
         
         hideLoading: function() {
-            // The loading will be replaced by success or form with errors
+            // Remove loading overlay
+            $('.eb-loading-overlay').remove();
         },
         
         closeModal: function() {
             $('.eb-modal').hide();
-            // If success modal was closed, reset the calendar for a new booking
-            if ($('#eb-success-modal').is(':visible')) {
-                this.resetCalendar();
-            }
+            // Reset calendar after any modal closes to ensure clean state
+            this.resetCalendar();
         },
         
         resetCalendar: function() {
