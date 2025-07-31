@@ -227,6 +227,16 @@ class EasyBookinger_File_Manager {
             $content_type = 'application/json; charset=UTF-8';
         }
         
+        // Check if headers have already been sent
+        if (headers_sent()) {
+            wp_die(__('ヘッダーが既に送信されているため、ダウンロードできません', EASY_BOOKINGER_TEXT_DOMAIN));
+        }
+        
+        // Clean output buffer
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
         // Set headers for download
         header('Content-Type: ' . $content_type);
         header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -235,11 +245,6 @@ class EasyBookinger_File_Manager {
         header('Pragma: no-cache');
         header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
         header('Expires: 0');
-        
-        // Clean output buffer
-        if (ob_get_level()) {
-            ob_end_clean();
-        }
         
         // Output file
         readfile($file_path);

@@ -549,18 +549,27 @@
             // Show booking dates
             successHtml += '<div class="eb-booking-info">';
             successHtml += '<h5>📅 予約日程</h5>';
-            successHtml += '<p class="eb-booking-dates">';
+            successHtml += '<div class="eb-booking-dates">';
+            
+            // Display each booking date
             data.booking_dates.forEach(function(date, index) {
                 if (index > 0) successHtml += '<br>';
                 successHtml += date;
             });
-            successHtml += '</p>';
             
-            // Show time slot if available
-            if (data.time_slot) {
-                successHtml += '<p><strong>時間:</strong> ' + data.time_slot + '</p>';
+            // Add time information if available (show once for all dates)
+            if (data.time_slot || data.booking_time) {
+                successHtml += '</div>';
+                successHtml += '<div class="eb-booking-time">';
+                successHtml += '<strong>⏰ 時間:</strong> ';
+                if (data.time_slot) {
+                    successHtml += data.time_slot;
+                } else if (data.booking_time) {
+                    successHtml += data.booking_time;
+                }
             }
             
+            successHtml += '</div>';
             successHtml += '</div>';
             
             // Show form data

@@ -138,6 +138,11 @@ class EasyBookinger_Export {
             wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
         }
         
+        // Start output buffering to prevent header issues
+        if (!headers_sent()) {
+            ob_start();
+        }
+        
         $database = EasyBookinger_Database::instance();
         
         // Prepare query arguments
@@ -166,6 +171,10 @@ class EasyBookinger_Export {
         $bookings = $database->get_bookings($args);
         
         if (empty($bookings)) {
+            // Clean output buffer before adding admin notice
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
             add_action('admin_notices', function() {
                 echo '<div class="notice notice-warning is-dismissible"><p>' . __('エクスポートするデータがありません', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
             });
@@ -183,15 +192,37 @@ class EasyBookinger_Export {
         $result = EasyBookinger_File_Manager::save_file($csv_content, $filename, 'export');
         
         if ($result['success']) {
-            // Show success notice and redirect to prevent resubmission
-            $redirect_url = add_query_arg(array(
-                'page' => 'easy-bookinger-export',
-                'export_success' => '1',
-                'filename' => urlencode($result['filename'])
-            ), admin_url('admin.php'));
-            wp_redirect($redirect_url);
-            exit;
+            // Clean output buffer before redirect
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Check if headers have already been sent
+            if (headers_sent()) {
+                // If headers are already sent, show a JavaScript redirect instead
+                echo '<script type="text/javascript">';
+                echo 'window.location.href = "' . esc_url(add_query_arg(array(
+                    'page' => 'easy-bookinger-export',
+                    'export_success' => '1',
+                    'filename' => urlencode($result['filename'])
+                ), admin_url('admin.php'))) . '";';
+                echo '</script>';
+                exit;
+            } else {
+                // Show success notice and redirect to prevent resubmission
+                $redirect_url = add_query_arg(array(
+                    'page' => 'easy-bookinger-export',
+                    'export_success' => '1',
+                    'filename' => urlencode($result['filename'])
+                ), admin_url('admin.php'));
+                wp_redirect($redirect_url);
+                exit;
+            }
         } else {
+            // Clean output buffer before adding admin notice
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
             add_action('admin_notices', function() use ($result) {
                 echo '<div class="notice notice-error is-dismissible"><p>' . __('エクスポート中にエラーが発生しました', EASY_BOOKINGER_TEXT_DOMAIN) . ': ' . esc_html($result['error']) . '</p></div>';
             });

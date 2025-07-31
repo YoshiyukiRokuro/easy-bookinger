@@ -134,6 +134,9 @@ class EasyBookinger_Ajax {
             if ($time_slot) {
                 $booking_time = date('H:i', strtotime($time_slot->start_time));
             }
+        } elseif (isset($form_data['booking_time']) && !empty($form_data['booking_time'])) {
+            // Handle manual time input if time slots are not used
+            $booking_time = sanitize_text_field($form_data['booking_time']);
         }
         
         foreach ($booking_dates as $date) {
@@ -192,13 +195,39 @@ class EasyBookinger_Ajax {
             }
         }
         
+        // Get time slot information for display
+        $time_slot_display = null;
+        if ($time_slot_id) {
+            $time_slot = $database->get_time_slot_by_id($time_slot_id);
+            if ($time_slot) {
+                $time_slot_display = array(
+                    'id' => $time_slot_id,
+                    'name' => $time_slot->slot_name ?: date('H:i', strtotime($time_slot->start_time)),
+                    'start_time' => date('H:i', strtotime($time_slot->start_time)),
+                    'formatted_time' => $time_slot->slot_name ? 
+                        $time_slot->slot_name . ' (' . date('H:i', strtotime($time_slot->start_time)) . ')' :
+                        date('H:i', strtotime($time_slot->start_time))
+                );
+            }
+        }
+        
+        // Determine what time information to show in the response
+        $display_time = null;
+        if ($time_slot_display) {
+            $display_time = $time_slot_display['formatted_time'];
+        } elseif (!empty($booking_time)) {
+            $display_time = $booking_time;
+        }
+        
         wp_send_json_success(array(
             'message' => __('予約が完了しました', EASY_BOOKINGER_TEXT_DOMAIN),
             'booking_ids' => $booking_ids,
             'booking_dates' => $booking_dates,
+            'booking_time' => $booking_time,
             'form_data' => $display_form_data,
             'email_sent' => $email_sent,
-            'time_slot' => $time_slot_id ? $this->get_time_slot_name($time_slot_id) : null
+            'time_slot' => $display_time,
+            'time_slot_info' => $time_slot_display
         ));
     }
     
@@ -430,7 +459,7 @@ class EasyBookinger_Ajax {
         $slots_table = $wpdb->prefix . 'easy_bookinger_time_slots';
         
         $slot = $wpdb->get_row($wpdb->prepare(
-            "SELECT slot_name, start_time FROM $slots_table WHERE id = %d AND status = 'active'",
+            "SELECT slot_name, start_time FROM $slots_table WHERE id = %d AND is_active = 1",
             $time_slot_id
         ));
         
