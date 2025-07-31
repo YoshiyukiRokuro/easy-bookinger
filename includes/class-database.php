@@ -94,7 +94,6 @@ class EasyBookinger_Database {
         $sql_timeslots = "CREATE TABLE $timeslots_table (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             start_time time NOT NULL,
-            end_time time NOT NULL,
             slot_name varchar(50) DEFAULT NULL,
             is_active tinyint(1) DEFAULT 1,
             max_bookings int DEFAULT 1,
@@ -529,14 +528,13 @@ class EasyBookinger_Database {
     /**
      * Add time slot
      */
-    public function add_time_slot($start_time, $end_time, $slot_name = '', $max_bookings = 1) {
+    public function add_time_slot($start_time, $slot_name = '', $max_bookings = 1) {
         global $wpdb;
         
         $table = $wpdb->prefix . 'easy_bookinger_time_slots';
         
         return $wpdb->insert($table, array(
             'start_time' => sanitize_text_field($start_time),
-            'end_time' => sanitize_text_field($end_time),
             'slot_name' => sanitize_text_field($slot_name),
             'max_bookings' => (int)$max_bookings,
             'is_active' => 1
@@ -555,10 +553,6 @@ class EasyBookinger_Database {
         
         if (isset($data['start_time'])) {
             $update_data['start_time'] = sanitize_text_field($data['start_time']);
-        }
-        
-        if (isset($data['end_time'])) {
-            $update_data['end_time'] = sanitize_text_field($data['end_time']);
         }
         
         if (isset($data['slot_name'])) {
@@ -596,27 +590,15 @@ class EasyBookinger_Database {
     public static function get_default_time_slots() {
         $slots = array();
         
-        // Generate 15-minute slots from 9:00 to 17:00
+        // Generate hourly slots from 9:00 to 17:00
         for ($hour = 9; $hour < 17; $hour++) {
-            for ($minute = 0; $minute < 60; $minute += 15) {
-                $start_time = sprintf('%02d:%02d:00', $hour, $minute);
-                $end_minute = $minute + 15;
-                $end_hour = $hour;
-                
-                if ($end_minute >= 60) {
-                    $end_minute = 0;
-                    $end_hour++;
-                }
-                
-                $end_time = sprintf('%02d:%02d:00', $end_hour, $end_minute);
-                
-                $slots[] = array(
-                    'start_time' => $start_time,
-                    'end_time' => $end_time,
-                    'slot_name' => sprintf('%02d:%02d-%02d:%02d', $hour, $minute, $end_hour, $end_minute),
-                    'max_bookings' => 1
-                );
-            }
+            $start_time = sprintf('%02d:00:00', $hour);
+            
+            $slots[] = array(
+                'start_time' => $start_time,
+                'slot_name' => sprintf('%02d:00', $hour),
+                'max_bookings' => 1
+            );
         }
         
         return $slots;

@@ -225,7 +225,6 @@ final class EasyBookinger {
             foreach ($default_slots as $slot) {
                 $database->add_time_slot(
                     $slot['start_time'],
-                    $slot['end_time'], 
                     $slot['slot_name'],
                     $slot['max_bookings']
                 );
