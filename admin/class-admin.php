@@ -201,7 +201,7 @@ class EasyBookinger_Admin {
                         <tr>
                             <td><?php echo esc_html($booking->id); ?></td>
                             <td><?php echo esc_html(date('Y/m/d', strtotime($booking->booking_date))); ?></td>
-                            <td><?php echo esc_html($booking->booking_time); ?></td>
+                            <td><?php echo esc_html($this->format_booking_time($booking->booking_time)); ?></td>
                             <td><?php echo esc_html($booking->user_name); ?></td>
                             <td><a href="mailto:<?php echo esc_attr($booking->email); ?>"><?php echo esc_html($booking->email); ?></a></td>
                             <td><?php echo esc_html($booking->phone); ?></td>
@@ -633,12 +633,6 @@ class EasyBookinger_Admin {
                             </td>
                         </tr>
                         <tr>
-                            <th scope="row"><?php _e('終了時間', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                            <td>
-                                <input type="time" name="end_time" required>
-                            </td>
-                        </tr>
-                        <tr>
                             <th scope="row"><?php _e('表示名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             <td>
                                 <input type="text" name="slot_name" class="regular-text" placeholder="例: 午前の部">
@@ -666,7 +660,6 @@ class EasyBookinger_Admin {
                         <thead>
                             <tr>
                                 <th><?php _e('開始時間', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                                <th><?php _e('終了時間', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                                 <th><?php _e('表示名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                                 <th><?php _e('最大予約数', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                                 <th><?php _e('状態', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
@@ -677,8 +670,7 @@ class EasyBookinger_Admin {
                             <?php foreach ($time_slots as $slot): ?>
                             <tr>
                                 <td><?php echo esc_html(date('H:i', strtotime($slot->start_time))); ?></td>
-                                <td><?php echo esc_html(date('H:i', strtotime($slot->end_time))); ?></td>
-                                <td><?php echo esc_html($slot->slot_name ?: (date('H:i', strtotime($slot->start_time)) . '-' . date('H:i', strtotime($slot->end_time)))); ?></td>
+                                <td><?php echo esc_html($slot->slot_name ?: date('H:i', strtotime($slot->start_time))); ?></td>
                                 <td><?php echo esc_html($slot->max_bookings); ?></td>
                                 <td>
                                     <?php if ($slot->is_active): ?>
@@ -931,11 +923,10 @@ class EasyBookinger_Admin {
         switch ($post_data['action']) {
             case 'add_timeslot':
                 $start_time = sanitize_text_field($post_data['start_time']) . ':00';
-                $end_time = sanitize_text_field($post_data['end_time']) . ':00';
                 $slot_name = sanitize_text_field($post_data['slot_name']);
                 $max_bookings = (int)$post_data['max_bookings'];
                 
-                if ($database->add_time_slot($start_time, $end_time, $slot_name, $max_bookings)) {
+                if ($database->add_time_slot($start_time, $slot_name, $max_bookings)) {
                     add_action('admin_notices', function() {
                         echo '<div class="notice notice-success is-dismissible"><p>' . __('時間帯を追加しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
                     });
@@ -984,5 +975,43 @@ class EasyBookinger_Admin {
                 }
                 break;
         }
+    }
+    
+    /**
+     * Format booking time display
+     */
+    private function format_booking_time($booking_time) {
+        // If booking_time is empty, return a dash
+        if (empty($booking_time)) {
+            return '-';
+        }
+        
+        // If booking_time is a number (time slot ID), convert it to time format
+        if (is_numeric($booking_time)) {
+            $database = EasyBookinger_Database::instance();
+            $time_slot = $database->get_time_slot_by_id((int)$booking_time);
+            
+            if ($time_slot) {
+                // Return formatted time from time slot
+                return date('H:i', strtotime($time_slot->start_time));
+            } else {
+                // Time slot not found, return the raw value
+                return $booking_time;
+            }
+        }
+        
+        // If it's already in time format (HH:MM), return as is
+        if (preg_match('/^\d{1,2}:\d{2}$/', $booking_time)) {
+            return $booking_time;
+        }
+        
+        // Try to parse as time and format it
+        $parsed_time = strtotime($booking_time);
+        if ($parsed_time !== false) {
+            return date('H:i', $parsed_time);
+        }
+        
+        // If all else fails, return the original value
+        return $booking_time;
     }
 }

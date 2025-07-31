@@ -212,63 +212,6 @@ class EasyBookinger_Settings {
                 <?php submit_button(); ?>
             </form>
         </div>
-        
-        <script>
-        jQuery(document).ready(function($) {
-            // Add new booking field
-            $('#add-field').click(function() {
-                var fieldCount = $('#booking-fields-container .booking-field-row').length;
-                var fieldHtml = '<div class="booking-field-row" data-index="' + fieldCount + '">' +
-                    '<table class="form-table">' +
-                    '<tr><th><?php _e('項目名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>' +
-                    '<td><input type="text" name="booking_fields[' + fieldCount + '][name]" value="" /></td></tr>' +
-                    '<tr><th><?php _e('ラベル', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>' +
-                    '<td><input type="text" name="booking_fields[' + fieldCount + '][label]" value="" /></td></tr>' +
-                    '<tr><th><?php _e('タイプ', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>' +
-                    '<td><select name="booking_fields[' + fieldCount + '][type]">' +
-                    '<option value="text"><?php _e('テキスト', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>' +
-                    '<option value="email"><?php _e('メール', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>' +
-                    '<option value="tel"><?php _e('電話番号', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>' +
-                    '<option value="textarea"><?php _e('テキストエリア', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>' +
-                    '<option value="select"><?php _e('セレクト', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>' +
-                    '<option value="radio"><?php _e('ラジオボタン', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>' +
-                    '<option value="checkbox"><?php _e('チェックボックス', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>' +
-                    '</select></td></tr>' +
-                    '<tr><th><?php _e('必須', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>' +
-                    '<td><label><input type="checkbox" name="booking_fields[' + fieldCount + '][required]" value="1" /> <?php _e('必須項目にする', EASY_BOOKINGER_TEXT_DOMAIN); ?></label></td></tr>' +
-                    '<tr><th><?php _e('最大文字数', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>' +
-                    '<td><input type="number" name="booking_fields[' + fieldCount + '][maxlength]" value="" min="1" />' +
-                    '<p class="description"><?php _e('テキスト・テキストエリア項目の最大文字数（空の場合は制限なし）', EASY_BOOKINGER_TEXT_DOMAIN); ?></p></td></tr>' +
-                    '</table>' +
-                    '<button type="button" class="button remove-field"><?php _e('この項目を削除', EASY_BOOKINGER_TEXT_DOMAIN); ?></button>' +
-                    '<hr></div>';
-                $('#booking-fields-container').append(fieldHtml);
-            });
-            
-            // Remove booking field
-            $(document).on('click', '.remove-field', function() {
-                $(this).closest('.booking-field-row').remove();
-            });
-            
-            // Add admin email
-            $('#add-admin-email').click(function() {
-                var emailHtml = '<div class="admin-email-row">' +
-                    '<input type="email" name="admin_emails[]" value="" placeholder="admin@example.com" style="width: 300px;" />' +
-                    ' <button type="button" class="button remove-admin-email"><?php _e('削除', EASY_BOOKINGER_TEXT_DOMAIN); ?></button>' +
-                    '</div>';
-                $('#admin-emails-container').append(emailHtml);
-            });
-            
-            // Remove admin email
-            $(document).on('click', '.remove-admin-email', function() {
-                if ($('#admin-emails-container .admin-email-row').length > 1) {
-                    $(this).closest('.admin-email-row').remove();
-                } else {
-                    alert('<?php _e('最低1つのメールアドレスが必要です', EASY_BOOKINGER_TEXT_DOMAIN); ?>');
-                }
-            });
-        });
-        </script>
         <?php
     }
     
@@ -294,6 +237,9 @@ class EasyBookinger_Settings {
         
         // Process booking fields and ensure email is required
         if (isset($_POST['booking_fields']) && is_array($_POST['booking_fields'])) {
+            $has_email = false;
+            $has_email_confirm = false;
+            
             foreach ($_POST['booking_fields'] as $field) {
                 if (!empty($field['name']) && !empty($field['label'])) {
                     $field_data = array(
@@ -304,14 +250,68 @@ class EasyBookinger_Settings {
                         'maxlength' => !empty($field['maxlength']) ? intval($field['maxlength']) : 0
                     );
                     
-                    // Make email fields required by force (requirement #7)
-                    if ($field['type'] === 'email' || $field['name'] === 'email') {
+                    // Make email fields required by force (requirement #3)
+                    if ($field['type'] === 'email' || $field['name'] === 'email' || $field['name'] === 'email_confirm') {
                         $field_data['required'] = true;
+                    }
+                    
+                    // Track if we have email fields
+                    if ($field['name'] === 'email') {
+                        $has_email = true;
+                    }
+                    if ($field['name'] === 'email_confirm') {
+                        $has_email_confirm = true;
                     }
                     
                     $settings['booking_fields'][] = $field_data;
                 }
             }
+            
+            // Ensure email and email_confirm fields are always present
+            if (!$has_email) {
+                $settings['booking_fields'][] = array(
+                    'name' => 'email',
+                    'label' => __('メールアドレス', EASY_BOOKINGER_TEXT_DOMAIN),
+                    'type' => 'email',
+                    'required' => true,
+                    'maxlength' => 0
+                );
+            }
+            
+            if (!$has_email_confirm) {
+                $settings['booking_fields'][] = array(
+                    'name' => 'email_confirm',
+                    'label' => __('メールアドレス（確認用）', EASY_BOOKINGER_TEXT_DOMAIN),
+                    'type' => 'email',
+                    'required' => true,
+                    'maxlength' => 0
+                );
+            }
+        } else {
+            // If no booking fields are submitted, add default required fields
+            $settings['booking_fields'] = array(
+                array(
+                    'name' => 'user_name',
+                    'label' => __('氏名', EASY_BOOKINGER_TEXT_DOMAIN),
+                    'type' => 'text',
+                    'required' => true,
+                    'maxlength' => 0
+                ),
+                array(
+                    'name' => 'email',
+                    'label' => __('メールアドレス', EASY_BOOKINGER_TEXT_DOMAIN),
+                    'type' => 'email',
+                    'required' => true,
+                    'maxlength' => 0
+                ),
+                array(
+                    'name' => 'email_confirm',
+                    'label' => __('メールアドレス（確認用）', EASY_BOOKINGER_TEXT_DOMAIN),
+                    'type' => 'email',
+                    'required' => true,
+                    'maxlength' => 0
+                )
+            );
         }
         
         // Save admin emails

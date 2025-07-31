@@ -557,6 +557,19 @@ class EasyBookinger_Database {
     }
     
     /**
+     * Get time slot by ID
+     */
+    public function get_time_slot_by_id($slot_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_time_slots';
+        return $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE id = %d",
+            $slot_id
+        ));
+    }
+    
+    /**
      * Add time slot
      */
     public function add_time_slot($start_time, $slot_name = '', $max_bookings = 1) {

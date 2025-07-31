@@ -100,10 +100,19 @@ class EasyBookinger_Ajax {
         $booking_ids = array();
         $time_slot_id = isset($form_data['booking_time_slot']) ? (int)$form_data['booking_time_slot'] : null;
         
+        // Get time slot details if selected
+        $booking_time = '';
+        if ($time_slot_id) {
+            $time_slot = $database->get_time_slot_by_id($time_slot_id);
+            if ($time_slot) {
+                $booking_time = date('H:i', strtotime($time_slot->start_time));
+            }
+        }
+        
         foreach ($booking_dates as $date) {
             $booking_data = array(
                 'booking_date' => $date,
-                'booking_time' => $time_slot_id ? (string)$time_slot_id : '',
+                'booking_time' => $booking_time,
                 'user_name' => sanitize_text_field($form_data['user_name']),
                 'email' => sanitize_email($form_data['email']),
                 'phone' => sanitize_text_field($form_data['phone'] ?? ''),
@@ -215,8 +224,7 @@ class EasyBookinger_Ajax {
             $formatted_slots[] = array(
                 'id' => $slot->id,
                 'start_time' => $slot->start_time,
-                'end_time' => $slot->end_time,
-                'slot_name' => $slot->slot_name ?: (date('H:i', strtotime($slot->start_time)) . '-' . date('H:i', strtotime($slot->end_time))),
+                'slot_name' => $slot->slot_name ?: date('H:i', strtotime($slot->start_time)),
                 'max_bookings' => $slot->max_bookings
             );
         }
@@ -274,10 +282,11 @@ class EasyBookinger_Ajax {
             }
             
             // Check current bookings for this time slot
+            $time_format = date('H:i', strtotime($time_slot->start_time));
             $current_bookings = $wpdb->get_var($wpdb->prepare(
                 "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND booking_time = %s AND status = 'active'",
                 $date,
-                $time_slot->id
+                $time_format
             ));
             
             if ($current_bookings >= $time_slot->max_bookings) {
