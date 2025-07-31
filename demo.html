@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Bookinger - Demo Preview</title>
+    <link rel="stylesheet" href="assets/css/easy-bookinger.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <style>
+        body {
+            font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .demo-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #007cba;
+        }
+        .demo-header h1 {
+            color: #333;
+            margin: 0;
+        }
+        .demo-header p {
+            color: #666;
+            margin: 10px 0 0 0;
+        }
+        .demo-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        .demo-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .demo-feature {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            border-left: 4px solid #007cba;
+        }
+        .demo-feature h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .demo-feature p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>Easy Bookinger - WordPress予約システム</h1>
+            <p>カレンダーUIで簡単予約管理</p>
+        </div>
+        
+        <div class="demo-notice">
+            <strong>📋 デモ画面</strong><br>
+            これは Easy Bookinger プラグインのデモ画面です。実際の WordPress 環境では、ショートコード <code>[easy_bookinger]</code> でこの予約カレンダーを表示できます。
+        </div>
+        
+        <div class="demo-features">
+            <div class="demo-feature">
+                <h3>📅 直感的カレンダー</h3>
+                <p>見やすいカレンダーUIで日付選択が簡単。予約済み日程は自動で無効化表示されます。</p>
+            </div>
+            <div class="demo-feature">
+                <h3>📝 カスタマイズ可能フォーム</h3>
+                <p>管理者が自由に設定できる入力項目。テキスト、メール、選択肢など多様な形式に対応。</p>
+            </div>
+            <div class="demo-feature">
+                <h3>📄 PDF自動生成</h3>
+                <p>予約完了時にパスワード付きPDF確認書を自動生成。ダウンロードリンクをメール送信。</p>
+            </div>
+            <div class="demo-feature">
+                <h3>📊 管理画面</h3>
+                <p>WordPress管理画面から予約の確認・編集・エクスポートが可能。統計情報も表示。</p>
+            </div>
+        </div>
+        
+        <!-- Easy Bookinger Calendar Demo -->
+        <div id="easy-bookinger-container" class="easy-bookinger-theme-default">
+            <div id="easy-bookinger-calendar">
+                <div class="eb-calendar-header">
+                    <button type="button" class="eb-nav-btn eb-prev-month" data-direction="prev">
+                        <span>前月</span>
+                    </button>
+                    <div class="eb-current-month">
+                        <span id="eb-current-month-text">2024年1月</span>
+                    </div>
+                    <button type="button" class="eb-nav-btn eb-next-month" data-direction="next">
+                        <span>次月</span>
+                    </button>
+                </div>
+                
+                <div class="eb-calendar-grid">
+                    <div class="eb-calendar-days-header">
+                        <div class="eb-day-header">日</div>
+                        <div class="eb-day-header">月</div>
+                        <div class="eb-day-header">火</div>
+                        <div class="eb-day-header">水</div>
+                        <div class="eb-day-header">木</div>
+                        <div class="eb-day-header">金</div>
+                        <div class="eb-day-header">土</div>
+                    </div>
+                    <div id="eb-calendar-days" class="eb-calendar-days">
+                        <!-- Demo calendar days -->
+                        <div class="eb-calendar-day other-month"><div class="eb-day-number">31</div></div>
+                        <div class="eb-calendar-day selectable today"><div class="eb-day-number">1</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">2</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">3</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">4</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">5</div></div>
+                        <div class="eb-calendar-day disabled"><div class="eb-day-number">6</div><div class="eb-day-status">不可</div></div>
+                        
+                        <div class="eb-calendar-day disabled"><div class="eb-day-number">7</div><div class="eb-day-status">不可</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">8</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">9</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">10</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">11</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">12</div></div>
+                        <div class="eb-calendar-day disabled"><div class="eb-day-number">13</div><div class="eb-day-status">不可</div></div>
+                        
+                        <div class="eb-calendar-day disabled"><div class="eb-day-number">14</div><div class="eb-day-status">不可</div></div>
+                        <div class="eb-calendar-day booked"><div class="eb-day-number">15</div><div class="eb-day-status">予約済</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">16</div></div>
+                        <div class="eb-calendar-day selectable selected"><div class="eb-day-number">17</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">18</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">19</div></div>
+                        <div class="eb-calendar-day disabled"><div class="eb-day-number">20</div><div class="eb-day-status">不可</div></div>
+                        
+                        <div class="eb-calendar-day disabled"><div class="eb-day-number">21</div><div class="eb-day-status">不可</div></div>
+                        <div class="eb-calendar-day booked"><div class="eb-day-number">22</div><div class="eb-day-status">予約済</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">23</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">24</div></div>
+                        <div class="eb-calendar-day selectable selected"><div class="eb-day-number">25</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">26</div></div>
+                        <div class="eb-calendar-day disabled"><div class="eb-day-number">27</div><div class="eb-day-status">不可</div></div>
+                        
+                        <div class="eb-calendar-day disabled"><div class="eb-day-number">28</div><div class="eb-day-status">不可</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">29</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">30</div></div>
+                        <div class="eb-calendar-day selectable"><div class="eb-day-number">31</div></div>
+                        <div class="eb-calendar-day other-month"><div class="eb-day-number">1</div></div>
+                        <div class="eb-calendar-day other-month"><div class="eb-day-number">2</div></div>
+                        <div class="eb-calendar-day other-month"><div class="eb-day-number">3</div></div>
+                    </div>
+                </div>
+                
+                <div class="eb-selected-dates">
+                    <h4>選択された日付</h4>
+                    <div id="eb-selected-dates-list" class="eb-selected-dates-list">
+                        <div class="eb-selected-date-item" data-date="2024-01-17">
+                            2024年1月17日（水）
+                            <span class="eb-selected-date-remove">&times;</span>
+                        </div>
+                        <div class="eb-selected-date-item" data-date="2024-01-25">
+                            2024年1月25日（木）
+                            <span class="eb-selected-date-remove">&times;</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="eb-calendar-actions">
+                    <button type="button" id="eb-book-button" class="eb-button eb-primary" onclick="showDemoForm()">
+                        予約
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 5px;">
+            <h3>🚀 主な機能</h3>
+            <ul>
+                <li><strong>レスポンシブデザイン</strong>: PC・タブレット・スマートフォン対応</li>
+                <li><strong>セキュリティ対策</strong>: CSRF保護、SQLインジェクション対策、XSS対策</li>
+                <li><strong>国際化対応</strong>: 日本語完全対応、多言語拡張可能</li>
+                <li><strong>WordPressネイティブ</strong>: WordPress標準に準拠した開発</li>
+                <li><strong>カスタマイズ性</strong>: CSS・PHPでの柔軟なカスタマイズ</li>
+                <li><strong>パフォーマンス</strong>: 軽量で高速な動作</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script>
+        function showDemoForm() {
+            toastr.info('デモ画面では予約フォームは表示されません。<br>実際のWordPress環境では、この後に予約フォームが表示され、入力後にPDF確認書が生成されます。', 'デモ機能', {
+                timeOut: 0,
+                extendedTimeOut: 0,
+                closeButton: true,
+                allowHtml: true
+            });
+        }
+        
+        // Demo click handlers
+        $(document).ready(function() {
+            $('.eb-calendar-day.selectable').click(function() {
+                $(this).toggleClass('selected');
+                
+                var selectedCount = $('.eb-calendar-day.selected').length;
+                if (selectedCount > 0) {
+                    $('#eb-book-button').prop('disabled', false);
+                } else {
+                    $('#eb-book-button').prop('disabled', true);
+                }
+                
+                if (selectedCount > 5) {
+                    toastr.warning('選択できる日数は最大5日です');
+                    $(this).removeClass('selected');
+                }
+            });
+            
+            $('.eb-selected-date-remove').click(function() {
+                var date = $(this).closest('.eb-selected-date-item').data('date');
+                var dayElement = $('.eb-calendar-day[data-date="' + date + '"]');
+                if (dayElement.length === 0) {
+                    // Find by day number for demo
+                    var dayNum = date.split('-')[2];
+                    dayElement = $('.eb-calendar-day.selected').filter(function() {
+                        return $(this).find('.eb-day-number').text() == parseInt(dayNum);
+                    }).first();
+                }
+                dayElement.removeClass('selected');
+                $(this).closest('.eb-selected-date-item').remove();
+                
+                var selectedCount = $('.eb-calendar-day.selected').length;
+                if (selectedCount === 0) {
+                    $('#eb-book-button').prop('disabled', true);
+                }
+            });
+            
+            // Initially disable button if no selection
+            var selectedCount = $('.eb-calendar-day.selected').length;
+            if (selectedCount === 0) {
+                $('#eb-book-button').prop('disabled', true);
+            }
+        });
+    </script>
+</body>
+</html>

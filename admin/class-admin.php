@@ -168,19 +168,19 @@ class EasyBookinger_Admin {
                             </td>
                             <td><?php echo esc_html(date('Y/m/d H:i', strtotime($booking->created_at))); ?></td>
                             <td>
-                                <a href="<?php echo esc_url(add_query_arg(array('action' => 'view', 'booking_id' => $booking->id))); ?>" class="button button-small">
+                                <a href="<?php echo esc_url(add_query_arg(array('action' => 'view', 'booking_id' => $booking->id, '_wpnonce' => wp_create_nonce('easy_bookinger_admin_action_' . $booking->id)))); ?>" class="button button-small">
                                     <?php _e('詳細', EASY_BOOKINGER_TEXT_DOMAIN); ?>
                                 </a>
                                 <?php if ($booking->status === 'active'): ?>
-                                <a href="<?php echo esc_url(add_query_arg(array('action' => 'deactivate', 'booking_id' => $booking->id))); ?>" class="button button-small">
+                                <a href="<?php echo esc_url(add_query_arg(array('action' => 'deactivate', 'booking_id' => $booking->id, '_wpnonce' => wp_create_nonce('easy_bookinger_admin_action_' . $booking->id)))); ?>" class="button button-small">
                                     <?php _e('無効化', EASY_BOOKINGER_TEXT_DOMAIN); ?>
                                 </a>
                                 <?php else: ?>
-                                <a href="<?php echo esc_url(add_query_arg(array('action' => 'activate', 'booking_id' => $booking->id))); ?>" class="button button-small">
+                                <a href="<?php echo esc_url(add_query_arg(array('action' => 'activate', 'booking_id' => $booking->id, '_wpnonce' => wp_create_nonce('easy_bookinger_admin_action_' . $booking->id)))); ?>" class="button button-small">
                                     <?php _e('有効化', EASY_BOOKINGER_TEXT_DOMAIN); ?>
                                 </a>
                                 <?php endif; ?>
-                                <a href="<?php echo esc_url(add_query_arg(array('action' => 'delete', 'booking_id' => $booking->id))); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php _e('本当に削除しますか？', EASY_BOOKINGER_TEXT_DOMAIN); ?>')">
+                                <a href="<?php echo esc_url(add_query_arg(array('action' => 'delete', 'booking_id' => $booking->id, '_wpnonce' => wp_create_nonce('easy_bookinger_admin_action_' . $booking->id)))); ?>" class="button button-small button-link-delete" onclick="return confirm('<?php _e('本当に削除しますか？', EASY_BOOKINGER_TEXT_DOMAIN); ?>')">
                                     <?php _e('削除', EASY_BOOKINGER_TEXT_DOMAIN); ?>
                                 </a>
                             </td>
@@ -224,8 +224,18 @@ class EasyBookinger_Admin {
      * Handle booking actions
      */
     private function handle_booking_action($action, $booking_id) {
-        if (!wp_verify_nonce($_GET['_wpnonce'] ?? '', 'easy_bookinger_admin_nonce')) {
-            wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
+        // Create nonce for verification
+        $nonce = wp_create_nonce('easy_bookinger_admin_action_' . $booking_id);
+        if (!isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'easy_bookinger_admin_action_' . $booking_id)) {
+            // Add nonce to URLs if not present
+            $current_url = remove_query_arg(array('action', 'booking_id', '_wpnonce'));
+            $redirect_url = add_query_arg(array(
+                'action' => $action,
+                'booking_id' => $booking_id,
+                '_wpnonce' => $nonce
+            ), $current_url);
+            wp_redirect($redirect_url);
+            exit;
         }
         
         $database = EasyBookinger_Database::instance();
