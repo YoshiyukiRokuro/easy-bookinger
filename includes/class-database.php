@@ -103,12 +103,43 @@ class EasyBookinger_Database {
             KEY is_active (is_active)
         ) $charset_collate;";
         
+        // Special availability table (for temporary booking days)
+        $special_availability_table = $wpdb->prefix . 'easy_bookinger_special_availability';
+        $sql_special_availability = "CREATE TABLE $special_availability_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            availability_date date NOT NULL,
+            is_available tinyint(1) DEFAULT 1,
+            reason varchar(255) DEFAULT NULL,
+            max_bookings int DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY availability_date (availability_date),
+            KEY is_available (is_available)
+        ) $charset_collate;";
+        
+        // Admin emails table (for multiple admin email management)
+        $admin_emails_table = $wpdb->prefix . 'easy_bookinger_admin_emails';
+        $sql_admin_emails = "CREATE TABLE $admin_emails_table (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            email_address varchar(255) NOT NULL,
+            notification_types longtext DEFAULT NULL,
+            is_active tinyint(1) DEFAULT 1,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY email_address (email_address),
+            KEY is_active (is_active)
+        ) $charset_collate;";
+        
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_bookings);
         dbDelta($sql_settings);
         dbDelta($sql_restrictions);
         dbDelta($sql_quotas);
         dbDelta($sql_timeslots);
+        dbDelta($sql_special_availability);
+        dbDelta($sql_admin_emails);
     }
     
     /**
@@ -602,5 +633,199 @@ class EasyBookinger_Database {
         }
         
         return $slots;
+    }
+    
+    /**
+     * Special Availability Methods
+     */
+    
+    /**
+     * Get special availability dates
+     */
+    public function get_special_availability($date_from = null, $date_to = null) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_special_availability';
+        $where_clauses = array();
+        $values = array();
+        
+        if ($date_from) {
+            $where_clauses[] = 'availability_date >= %s';
+            $values[] = $date_from;
+        }
+        
+        if ($date_to) {
+            $where_clauses[] = 'availability_date <= %s';
+            $values[] = $date_to;
+        }
+        
+        $where_sql = '';
+        if (!empty($where_clauses)) {
+            $where_sql = 'WHERE ' . implode(' AND ', $where_clauses);
+        }
+        
+        $sql = "SELECT * FROM $table $where_sql ORDER BY availability_date";
+        
+        if (!empty($values)) {
+            $sql = $wpdb->prepare($sql, $values);
+        }
+        
+        return $wpdb->get_results($sql);
+    }
+    
+    /**
+     * Add special availability date
+     */
+    public function add_special_availability($date, $is_available = 1, $reason = '', $max_bookings = null) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_special_availability';
+        
+        return $wpdb->insert($table, array(
+            'availability_date' => sanitize_text_field($date),
+            'is_available' => (int)$is_available,
+            'reason' => sanitize_text_field($reason),
+            'max_bookings' => $max_bookings ? (int)$max_bookings : null
+        ));
+    }
+    
+    /**
+     * Update special availability
+     */
+    public function update_special_availability($id, $data) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_special_availability';
+        
+        $update_data = array();
+        
+        if (isset($data['availability_date'])) {
+            $update_data['availability_date'] = sanitize_text_field($data['availability_date']);
+        }
+        
+        if (isset($data['is_available'])) {
+            $update_data['is_available'] = (int)$data['is_available'];
+        }
+        
+        if (isset($data['reason'])) {
+            $update_data['reason'] = sanitize_text_field($data['reason']);
+        }
+        
+        if (isset($data['max_bookings'])) {
+            $update_data['max_bookings'] = $data['max_bookings'] ? (int)$data['max_bookings'] : null;
+        }
+        
+        if (empty($update_data)) {
+            return false;
+        }
+        
+        return $wpdb->update($table, $update_data, array('id' => (int)$id));
+    }
+    
+    /**
+     * Remove special availability
+     */
+    public function remove_special_availability($date) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_special_availability';
+        return $wpdb->delete($table, array('availability_date' => $date));
+    }
+    
+    /**
+     * Check if date has special availability
+     */
+    public function is_date_special_available($date) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_special_availability';
+        $result = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE availability_date = %s",
+            $date
+        ));
+        
+        return $result && $result->is_available;
+    }
+    
+    /**
+     * Admin Emails Methods
+     */
+    
+    /**
+     * Get active admin emails
+     */
+    public function get_active_admin_emails() {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_admin_emails';
+        return $wpdb->get_results(
+            "SELECT * FROM $table WHERE is_active = 1 ORDER BY id"
+        );
+    }
+    
+    /**
+     * Get all admin emails
+     */
+    public function get_admin_emails() {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_admin_emails';
+        return $wpdb->get_results(
+            "SELECT * FROM $table ORDER BY id"
+        );
+    }
+    
+    /**
+     * Add admin email
+     */
+    public function add_admin_email($email_address, $notification_types = array()) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_admin_emails';
+        
+        return $wpdb->insert($table, array(
+            'email_address' => sanitize_email($email_address),
+            'notification_types' => maybe_serialize($notification_types),
+            'is_active' => 1
+        ));
+    }
+    
+    /**
+     * Update admin email
+     */
+    public function update_admin_email($id, $data) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_admin_emails';
+        
+        $update_data = array();
+        
+        if (isset($data['email_address'])) {
+            $update_data['email_address'] = sanitize_email($data['email_address']);
+        }
+        
+        if (isset($data['notification_types'])) {
+            $update_data['notification_types'] = maybe_serialize($data['notification_types']);
+        }
+        
+        if (isset($data['is_active'])) {
+            $update_data['is_active'] = (int)$data['is_active'];
+        }
+        
+        if (empty($update_data)) {
+            return false;
+        }
+        
+        return $wpdb->update($table, $update_data, array('id' => (int)$id));
+    }
+    
+    /**
+     * Delete admin email
+     */
+    public function delete_admin_email($id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_admin_emails';
+        return $wpdb->delete($table, array('id' => (int)$id));
     }
 }

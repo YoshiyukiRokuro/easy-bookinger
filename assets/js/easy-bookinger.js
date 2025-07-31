@@ -19,6 +19,7 @@
                 bookedDates: {},
                 restrictedDates: [],
                 quotasData: {},
+                specialAvailability: {},
                 enableTimeSlots: false,
                 timeSlots: [],
                 bookingFields: []
@@ -27,6 +28,7 @@
             this.bookedDates = this.settings.bookedDates;
             this.restrictedDates = this.settings.restrictedDates;
             this.quotasData = this.settings.quotasData;
+            this.specialAvailability = this.settings.specialAvailability;
             this.bindEvents();
             this.renderCalendar();
         },
@@ -36,11 +38,17 @@
             
             // Navigation buttons
             $(document).on('click', '.eb-prev-month', function() {
+                if (!self.canNavigatePrevious()) {
+                    return false;
+                }
                 self.currentDate.setMonth(self.currentDate.getMonth() - 1);
                 self.renderCalendar();
             });
             
             $(document).on('click', '.eb-next-month', function() {
+                if (!self.canNavigateNext()) {
+                    return false;
+                }
                 self.currentDate.setMonth(self.currentDate.getMonth() + 1);
                 self.renderCalendar();
             });
@@ -93,6 +101,45 @@
             this.renderCalendarDays();
             this.updateSelectedDatesDisplay();
             this.updateBookButton();
+            this.updateNavigationButtons();
+        },
+        
+        canNavigatePrevious: function() {
+            var today = new Date();
+            var currentMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1);
+            var todayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            // Don't allow navigation to past months
+            return currentMonth > todayMonth;
+        },
+        
+        canNavigateNext: function() {
+            var today = new Date();
+            var maxMonths = parseInt(this.settings.displayMonths) || 3;
+            var maxDate = new Date(today.getFullYear(), today.getMonth() + maxMonths - 1, 1);
+            var currentMonth = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), 1);
+            
+            // Don't allow navigation beyond display_months setting
+            return currentMonth < maxDate;
+        },
+        
+        updateNavigationButtons: function() {
+            var $prevBtn = $('.eb-prev-month');
+            var $nextBtn = $('.eb-next-month');
+            
+            // Update previous button
+            if (this.canNavigatePrevious()) {
+                $prevBtn.removeClass('disabled').prop('disabled', false);
+            } else {
+                $prevBtn.addClass('disabled').prop('disabled', true);
+            }
+            
+            // Update next button
+            if (this.canNavigateNext()) {
+                $nextBtn.removeClass('disabled').prop('disabled', false);
+            } else {
+                $nextBtn.addClass('disabled').prop('disabled', true);
+            }
         },
         
         updateMonthDisplay: function() {
@@ -150,6 +197,7 @@
             var isBooked = this.bookedDates.hasOwnProperty(dateStr);
             var isRestricted = this.restrictedDates.indexOf(dateStr) !== -1;
             var isAllowedDay = this.settings.allowedDays.indexOf(dayOfWeek) !== -1;
+            var hasSpecialAvailability = this.specialAvailability.hasOwnProperty(dateStr);
             var remainingQuota = this.quotasData[dateStr] || 0;
             var isQuotaFull = remainingQuota <= 0;
             
@@ -158,11 +206,14 @@
             maxDisplayDate.setMonth(maxDisplayDate.getMonth() + this.settings.displayMonths);
             var isBeyondDisplayRange = date > maxDisplayDate;
             
+            // Special availability overrides normal day restrictions
+            var isSelectableDay = hasSpecialAvailability || isAllowedDay;
+            
             var classes = ['eb-calendar-day'];
             
             if (isOtherMonth) {
                 classes.push('other-month');
-            } else if (isPast || !isAllowedDay || isRestricted || isQuotaFull || isBeyondDisplayRange) {
+            } else if (isPast || !isSelectableDay || isRestricted || isQuotaFull || isBeyondDisplayRange) {
                 classes.push('disabled');
                 if (isRestricted) {
                     classes.push('restricted');
@@ -189,15 +240,29 @@
                 classes.push('booked');
             }
             
+            if (hasSpecialAvailability) {
+                classes.push('special-availability');
+            }
+            
             var statusText = '';
             if (isPast || isRestricted || isBeyondDisplayRange) {
                 statusText = '<div class="eb-day-status unavailable">不可</div>';
-            } else if (!isAllowedDay) {
+            } else if (!isSelectableDay) {
                 statusText = '<div class="eb-day-status not-allowed">不可</div>';
             } else if (isQuotaFull) {
                 statusText = '<div class="eb-day-status quota-full">満杯</div>';
             } else if (remainingQuota > 0) {
                 statusText = '<div class="eb-day-status available">残り' + remainingQuota + '件</div>';
+            }
+            
+            // Add special availability indicator
+            if (hasSpecialAvailability) {
+                var specialData = this.specialAvailability[dateStr];
+                var specialText = '臨時予約可';
+                if (specialData.reason) {
+                    specialText += '（' + specialData.reason + '）';
+                }
+                statusText += '<div class="eb-day-special">' + specialText + '</div>';
             }
             
             var $day = $('<div>')

@@ -14,8 +14,8 @@ class EasyBookinger_Export {
      * Render export page
      */
     public function render_export_page() {
-        if (isset($_POST['export_excel'])) {
-            $this->export_to_excel();
+        if (isset($_POST['export_csv'])) {
+            $this->export_to_csv();
             return;
         }
         
@@ -25,12 +25,21 @@ class EasyBookinger_Export {
             
             <div class="eb-export-section">
                 <h2><?php _e('予約データのエクスポート', EASY_BOOKINGER_TEXT_DOMAIN); ?></h2>
-                <p><?php _e('登録された予約データをExcel形式でダウンロードできます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                <p><?php _e('登録された予約データをCSV形式でダウンロードできます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
                 
                 <form method="post" action="">
                     <?php wp_nonce_field('easy_bookinger_export', 'easy_bookinger_export_nonce'); ?>
                     
                     <table class="form-table">
+                        <tr>
+                            <th scope="row"><?php _e('ファイル名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                            <td>
+                                <input type="text" name="filename" value="<?php echo esc_attr('easy_bookinger_export_' . date('Y-m-d')); ?>" style="width: 300px;" />
+                                <span>.csv</span>
+                                <p class="description"><?php _e('ダウンロードするCSVファイルの名前を指定してください（拡張子は自動で付きます）', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                            </td>
+                        </tr>
+                        
                         <tr>
                             <th scope="row"><?php _e('エクスポート期間', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             <td>
@@ -69,7 +78,7 @@ class EasyBookinger_Export {
                         </tr>
                     </table>
                     
-                    <?php submit_button(__('Excelファイルをダウンロード', EASY_BOOKINGER_TEXT_DOMAIN), 'primary', 'export_excel'); ?>
+                    <?php submit_button(__('CSVファイルをダウンロード', EASY_BOOKINGER_TEXT_DOMAIN), 'primary', 'export_csv'); ?>
                 </form>
             </div>
             
@@ -94,9 +103,9 @@ class EasyBookinger_Export {
     }
     
     /**
-     * Export to Excel
+     * Export to CSV
      */
-    private function export_to_excel() {
+    private function export_to_csv() {
         if (!wp_verify_nonce($_POST['easy_bookinger_export_nonce'], 'easy_bookinger_export')) {
             wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
         }
@@ -135,25 +144,28 @@ class EasyBookinger_Export {
             return;
         }
         
-        // Generate Excel content
-        $excel_content = $this->generate_excel_content($bookings);
+        // Get custom filename or use default
+        $filename = !empty($_POST['filename']) ? sanitize_file_name($_POST['filename']) : 'easy_bookinger_export_' . date('Y-m-d');
+        $filename .= '.csv';
         
         // Set headers for download
-        $filename = 'easy_bookinger_export_' . date('Y-m-d_H-i-s') . '.xls';
-        
-        header('Content-Type: application/vnd.ms-excel');
+        header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Pragma: no-cache');
         header('Expires: 0');
         
-        echo $excel_content;
+        // Add BOM for UTF-8 (helps with Excel compatibility)
+        echo "\xEF\xBB\xBF";
+        
+        // Generate CSV content
+        $this->generate_csv_content($bookings);
         exit;
     }
     
     /**
-     * Generate Excel content
+     * Generate CSV content
      */
-    private function generate_excel_content($bookings) {
+    private function generate_csv_content($bookings) {
         $settings = get_option('easy_bookinger_settings', array());
         $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
         
@@ -177,20 +189,13 @@ class EasyBookinger_Export {
             }
         }
         
-        // Start building Excel XML
-        $excel_xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-        $excel_xml .= '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">' . "\n";
-        $excel_xml .= '<Worksheet ss:Name="予約データ">' . "\n";
-        $excel_xml .= '<Table>' . "\n";
+        // Open output stream
+        $output = fopen('php://output', 'w');
         
-        // Header row
-        $excel_xml .= '<Row>' . "\n";
-        foreach ($headers as $header) {
-            $excel_xml .= '<Cell><Data ss:Type="String">' . htmlspecialchars($header, ENT_XML1, 'UTF-8') . '</Data></Cell>' . "\n";
-        }
-        $excel_xml .= '</Row>' . "\n";
+        // Write header row
+        fputcsv($output, $headers);
         
-        // Data rows
+        // Write data rows
         foreach ($bookings as $booking) {
             $form_data = maybe_unserialize($booking->form_data);
             
@@ -214,18 +219,10 @@ class EasyBookinger_Export {
                 }
             }
             
-            $excel_xml .= '<Row>' . "\n";
-            foreach ($row_data as $cell_data) {
-                $excel_xml .= '<Cell><Data ss:Type="String">' . htmlspecialchars($cell_data, ENT_XML1, 'UTF-8') . '</Data></Cell>' . "\n";
-            }
-            $excel_xml .= '</Row>' . "\n";
+            fputcsv($output, $row_data);
         }
         
-        $excel_xml .= '</Table>' . "\n";
-        $excel_xml .= '</Worksheet>' . "\n";
-        $excel_xml .= '</Workbook>';
-        
-        return $excel_xml;
+        fclose($output);
     }
     
     /**

@@ -86,6 +86,15 @@ class EasyBookinger_Admin {
         
         add_submenu_page(
             'easy-bookinger',
+            __('臨時予約設定', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('臨時予約設定', EASY_BOOKINGER_TEXT_DOMAIN),
+            'manage_options',
+            'easy-bookinger-special-availability',
+            array($this, 'special_availability_page')
+        );
+        
+        add_submenu_page(
+            'easy-bookinger',
             __('予約枠管理', EASY_BOOKINGER_TEXT_DOMAIN),
             __('予約枠管理', EASY_BOOKINGER_TEXT_DOMAIN),
             'manage_options',
@@ -366,6 +375,118 @@ class EasyBookinger_Admin {
     }
     
     /**
+     * Special availability page
+     */
+    public function special_availability_page() {
+        $database = EasyBookinger_Database::instance();
+        
+        // Handle actions
+        if (isset($_POST['action'])) {
+            $this->handle_special_availability_action($_POST);
+        }
+        
+        // Get current special availability dates
+        $special_dates = $database->get_special_availability();
+        
+        ?>
+        <div class="wrap">
+            <h1><?php _e('臨時予約設定', EASY_BOOKINGER_TEXT_DOMAIN); ?></h1>
+            
+            <div class="eb-admin-section">
+                <h2><?php _e('臨時予約可能日の追加', EASY_BOOKINGER_TEXT_DOMAIN); ?></h2>
+                <p><?php _e('通常は予約できない曜日でも、特定の日に限り予約を受け付けることができます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                
+                <form method="post" action="">
+                    <?php wp_nonce_field('eb_special_availability_action', 'eb_special_availability_nonce'); ?>
+                    <input type="hidden" name="action" value="add_special_availability">
+                    
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row"><?php _e('日付', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                            <td>
+                                <input type="date" name="availability_date" required />
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><?php _e('理由', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                            <td>
+                                <input type="text" name="reason" placeholder="<?php _e('例：振替営業日', EASY_BOOKINGER_TEXT_DOMAIN); ?>" style="width: 300px;" />
+                                <p class="description"><?php _e('臨時予約を受け付ける理由を入力してください（任意）', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><?php _e('予約枠数', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                            <td>
+                                <input type="number" name="max_bookings" value="3" min="1" max="20" />
+                                <span><?php _e('件', EASY_BOOKINGER_TEXT_DOMAIN); ?></span>
+                                <p class="description"><?php _e('この日の最大予約受付件数を設定してください', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <?php submit_button(__('臨時予約日を追加', EASY_BOOKINGER_TEXT_DOMAIN)); ?>
+                </form>
+            </div>
+            
+            <div class="eb-admin-section">
+                <h2><?php _e('設定済み臨時予約日', EASY_BOOKINGER_TEXT_DOMAIN); ?></h2>
+                <?php if (empty($special_dates)): ?>
+                    <p><?php _e('臨時予約日が設定されていません。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                <?php else: ?>
+                    <table class="wp-list-table widefat fixed striped">
+                        <thead>
+                            <tr>
+                                <th><?php _e('日付', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                                <th><?php _e('曜日', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                                <th><?php _e('理由', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                                <th><?php _e('予約枠数', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                                <th><?php _e('ステータス', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                                <th><?php _e('操作', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($special_dates as $date): ?>
+                            <tr>
+                                <td><?php echo esc_html($date->availability_date); ?></td>
+                                <td><?php echo esc_html(date('D', strtotime($date->availability_date))); ?></td>
+                                <td><?php echo esc_html($date->reason ?: '-'); ?></td>
+                                <td><?php echo esc_html($date->max_bookings ?: __('デフォルト', EASY_BOOKINGER_TEXT_DOMAIN)); ?></td>
+                                <td>
+                                    <?php if ($date->is_available): ?>
+                                        <span class="eb-status-active"><?php _e('有効', EASY_BOOKINGER_TEXT_DOMAIN); ?></span>
+                                    <?php else: ?>
+                                        <span class="eb-status-inactive"><?php _e('無効', EASY_BOOKINGER_TEXT_DOMAIN); ?></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <form method="post" style="display: inline;">
+                                        <?php wp_nonce_field('eb_special_availability_action', 'eb_special_availability_nonce'); ?>
+                                        <input type="hidden" name="action" value="toggle_special_availability">
+                                        <input type="hidden" name="date" value="<?php echo esc_attr($date->availability_date); ?>">
+                                        <input type="submit" class="button-small" 
+                                               value="<?php echo $date->is_available ? __('無効化', EASY_BOOKINGER_TEXT_DOMAIN) : __('有効化', EASY_BOOKINGER_TEXT_DOMAIN); ?>" />
+                                    </form>
+                                    
+                                    <form method="post" style="display: inline;">
+                                        <?php wp_nonce_field('eb_special_availability_action', 'eb_special_availability_nonce'); ?>
+                                        <input type="hidden" name="action" value="delete_special_availability">
+                                        <input type="hidden" name="date" value="<?php echo esc_attr($date->availability_date); ?>">
+                                        <input type="submit" class="button-small button-link-delete" 
+                                               value="<?php _e('削除', EASY_BOOKINGER_TEXT_DOMAIN); ?>"
+                                               onclick="return confirm('<?php _e('本当に削除しますか？', EASY_BOOKINGER_TEXT_DOMAIN); ?>')" />
+                                    </form>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php
+    }
+    
+    /**
      * Booking quotas page
      */
     public function quotas_page() {
@@ -461,7 +582,14 @@ class EasyBookinger_Admin {
                                     ?>
                                 </td>
                                 <td>
-                                    <!-- Update button removed - quota counts are automatically calculated -->
+                                    <form method="post" style="display: inline;">
+                                        <?php wp_nonce_field('eb_quotas_action', 'eb_quotas_nonce'); ?>
+                                        <input type="hidden" name="action" value="delete_quota">
+                                        <input type="hidden" name="quota_date" value="<?php echo esc_attr($quota->quota_date); ?>">
+                                        <input type="submit" class="button-small button-link-delete" 
+                                               value="<?php _e('削除', EASY_BOOKINGER_TEXT_DOMAIN); ?>"
+                                               onclick="return confirm('<?php _e('この予約枠設定を削除しますか？削除後はデフォルト値が適用されます。', EASY_BOOKINGER_TEXT_DOMAIN); ?>')" />
+                                    </form>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -527,16 +655,6 @@ class EasyBookinger_Admin {
                     
                     <?php submit_button(__('時間帯を追加', EASY_BOOKINGER_TEXT_DOMAIN)); ?>
                 </form>
-                
-                <div style="margin-top: 20px;">
-                    <h3><?php _e('デフォルト時間帯を追加', EASY_BOOKINGER_TEXT_DOMAIN); ?></h3>
-                    <p><?php _e('9:00-17:00の15分間隔の時間帯を一括で追加できます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
-                    <form method="post" action="">
-                        <?php wp_nonce_field('eb_timeslots_action', 'eb_timeslots_nonce'); ?>
-                        <input type="hidden" name="action" value="add_default_timeslots">
-                        <?php submit_button(__('デフォルト時間帯を追加', EASY_BOOKINGER_TEXT_DOMAIN), 'secondary'); ?>
-                    </form>
-                </div>
             </div>
             
             <div class="eb-admin-section">
@@ -681,6 +799,66 @@ class EasyBookinger_Admin {
     }
     
     /**
+     * Handle special availability actions
+     */
+    private function handle_special_availability_action($post_data) {
+        if (!wp_verify_nonce($post_data['eb_special_availability_nonce'], 'eb_special_availability_action')) {
+            wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
+        }
+        
+        $database = EasyBookinger_Database::instance();
+        
+        switch ($post_data['action']) {
+            case 'add_special_availability':
+                $date = sanitize_text_field($post_data['availability_date']);
+                $reason = sanitize_text_field($post_data['reason'] ?? '');
+                $max_bookings = !empty($post_data['max_bookings']) ? intval($post_data['max_bookings']) : null;
+                
+                if ($database->add_special_availability($date, 1, $reason, $max_bookings)) {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-success is-dismissible"><p>' . __('臨時予約日を追加しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+                    });
+                } else {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-error is-dismissible"><p>' . __('臨時予約日の追加に失敗しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+                    });
+                }
+                break;
+                
+            case 'toggle_special_availability':
+                $date = sanitize_text_field($post_data['date']);
+                $special_date = $database->get_special_availability($date, $date);
+                
+                if (!empty($special_date)) {
+                    $current_status = $special_date[0]->is_available;
+                    $new_status = $current_status ? 0 : 1;
+                    
+                    if ($database->update_special_availability($special_date[0]->id, array('is_available' => $new_status))) {
+                        $message = $new_status ? __('臨時予約日を有効化しました', EASY_BOOKINGER_TEXT_DOMAIN) : __('臨時予約日を無効化しました', EASY_BOOKINGER_TEXT_DOMAIN);
+                        add_action('admin_notices', function() use ($message) {
+                            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($message) . '</p></div>';
+                        });
+                    }
+                }
+                break;
+                
+            case 'delete_special_availability':
+                $date = sanitize_text_field($post_data['date']);
+                
+                if ($database->remove_special_availability($date)) {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-success is-dismissible"><p>' . __('臨時予約日を削除しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+                    });
+                } else {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-error is-dismissible"><p>' . __('臨時予約日の削除に失敗しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+                    });
+                }
+                break;
+        }
+    }
+    
+    /**
      * Handle booking quotas actions
      */
     private function handle_quotas_action($post_data) {
@@ -719,6 +897,24 @@ class EasyBookinger_Admin {
                     });
                 }
                 break;
+                
+            case 'delete_quota':
+                $date = sanitize_text_field($post_data['quota_date']);
+                
+                // Delete the quota setting - the date will revert to default quota
+                global $wpdb;
+                $quotas_table = $wpdb->prefix . 'easy_bookinger_booking_quotas';
+                
+                if ($wpdb->delete($quotas_table, array('quota_date' => $date))) {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-success is-dismissible"><p>' . __('予約枠設定を削除しました。この日はデフォルト設定が適用されます。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+                    });
+                } else {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-error is-dismissible"><p>' . __('予約枠設定の削除に失敗しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+                    });
+                }
+                break;
         }
     }
     
@@ -748,21 +944,6 @@ class EasyBookinger_Admin {
                         echo '<div class="notice notice-error is-dismissible"><p>' . __('時間帯の追加に失敗しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
                     });
                 }
-                break;
-                
-            case 'add_default_timeslots':
-                $default_slots = EasyBookinger_Database::get_default_time_slots();
-                $added_count = 0;
-                
-                foreach ($default_slots as $slot) {
-                    if ($database->add_time_slot($slot['start_time'], $slot['end_time'], $slot['slot_name'], $slot['max_bookings'])) {
-                        $added_count++;
-                    }
-                }
-                
-                add_action('admin_notices', function() use ($added_count) {
-                    echo '<div class="notice notice-success is-dismissible"><p>' . sprintf(__('%d個の時間帯を追加しました', EASY_BOOKINGER_TEXT_DOMAIN), $added_count) . '</p></div>';
-                });
                 break;
                 
             case 'toggle_timeslot':
