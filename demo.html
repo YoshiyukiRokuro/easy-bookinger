@@ -146,7 +146,7 @@
                         <div class="eb-calendar-day selectable selected"><div class="eb-day-number">17</div></div>
                         <div class="eb-calendar-day selectable"><div class="eb-day-number">18</div></div>
                         <div class="eb-calendar-day selectable"><div class="eb-day-number">19</div></div>
-                        <div class="eb-calendar-day disabled"><div class="eb-day-number">20</div><div class="eb-day-status">不可</div></div>
+                        <div class="eb-calendar-day disabled quota-full"><div class="eb-day-number">20</div><div class="eb-day-status quota-full">満員</div></div>
                         
                         <div class="eb-calendar-day disabled"><div class="eb-day-number">21</div><div class="eb-day-status">不可</div></div>
                         <div class="eb-calendar-day booked"><div class="eb-day-number">22</div><div class="eb-day-status">予約済</div></div>
@@ -199,18 +199,76 @@
                 <li><strong>パフォーマンス</strong>: 軽量で高速な動作</li>
             </ul>
         </div>
+        
+        <!-- Demo Form Modal -->
+        <div id="demo-modal" class="eb-modal" style="display: none;">
+            <div class="eb-modal-content">
+                <div class="eb-modal-header">
+                    <h3>予約フォーム（デモ）</h3>
+                    <button type="button" class="eb-modal-close" onclick="closeDemoForm()">&times;</button>
+                </div>
+                
+                <form id="demo-booking-form">
+                    <div class="eb-form-section">
+                        <h4>選択日程</h4>
+                        <div class="eb-form-selected-dates">
+                            <div class="eb-selected-date-item">2024年1月17日（水）</div>
+                            <div class="eb-selected-date-item">2024年1月25日（木）</div>
+                        </div>
+                    </div>
+                    
+                    <div class="eb-form-section">
+                        <h4>時間帯選択 <span class="eb-required">*</span></h4>
+                        <div class="eb-time-slots">
+                            <select name="booking_time_slot" class="eb-time-slot-select" required>
+                                <option value="">時間帯を選択してください</option>
+                                <option value="1">9:00-10:00</option>
+                                <option value="2">10:00-11:00</option>
+                                <option value="3">13:00-14:00</option>
+                                <option value="4">14:00-15:00</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="eb-form-section">
+                        <h4>お客様情報</h4>
+                        <div class="eb-form-field">
+                            <input type="text" placeholder="氏名" required>
+                        </div>
+                        <div class="eb-form-field">
+                            <input type="email" placeholder="メールアドレス" required>
+                        </div>
+                        <div class="eb-form-field">
+                            <input type="email" placeholder="メールアドレス（確認用）" required>
+                        </div>
+                        <div class="eb-form-field">
+                            <textarea placeholder="コメント" maxlength="200"></textarea>
+                            <div class="eb-field-help">最大200文字</div>
+                        </div>
+                    </div>
+                    
+                    <div class="eb-form-actions">
+                        <button type="button" class="eb-button eb-secondary" onclick="closeDemoForm()">
+                            キャンセル
+                        </button>
+                        <button type="submit" class="eb-button eb-primary">
+                            予約を登録
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script>
         function showDemoForm() {
-            toastr.info('デモ画面では予約フォームは表示されません。<br>実際のWordPress環境では、この後に予約フォームが表示され、入力後にPDF確認書が生成されます。', 'デモ機能', {
-                timeOut: 0,
-                extendedTimeOut: 0,
-                closeButton: true,
-                allowHtml: true
-            });
+            document.getElementById('demo-modal').style.display = 'flex';
+        }
+        
+        function closeDemoForm() {
+            document.getElementById('demo-modal').style.display = 'none';
         }
         
         // Demo click handlers
@@ -255,6 +313,16 @@
             if (selectedCount === 0) {
                 $('#eb-book-button').prop('disabled', true);
             }
+            
+            // Demo form submission
+            $('#demo-booking-form').submit(function(e) {
+                e.preventDefault();
+                closeDemoForm();
+                toastr.success('デモ予約が送信されました！<br>実際のWordPress環境では、この後にPDF確認書が生成され、メールで送信されます。', 'デモ完了', {
+                    timeOut: 5000,
+                    allowHtml: true
+                });
+            });
         });
     </script>
 </body>

@@ -269,7 +269,7 @@
             } else if (!isSelectableDay) {
                 statusText = '<div class="eb-day-status not-allowed">不可</div>';
             } else if (isQuotaFull) {
-                statusText = '<div class="eb-day-status quota-full">満杯</div>';
+                statusText = '<div class="eb-day-status quota-full">満員</div>';
             } else if (remainingQuota > 0) {
                 statusText = '<div class="eb-day-status available">残り' + remainingQuota + '件</div>';
             }

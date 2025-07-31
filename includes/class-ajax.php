@@ -118,7 +118,7 @@ class EasyBookinger_Ajax {
             $remaining_quota = $database->get_remaining_quota($date);
             if ($remaining_quota <= 0) {
                 wp_send_json_error(array(
-                    'message' => sprintf(__('選択された日付（%s）は予約枠が満杯です', EASY_BOOKINGER_TEXT_DOMAIN), $date)
+                    'message' => sprintf(__('選択された日付（%s）は予約枠が満員です', EASY_BOOKINGER_TEXT_DOMAIN), $date)
                 ));
             }
         }
@@ -286,7 +286,7 @@ class EasyBookinger_Ajax {
         $remaining_quota = $database->get_remaining_quota($date);
         if ($remaining_quota <= 0) {
             wp_send_json_error(array(
-                'message' => __('この日付の予約枠は満杯です', EASY_BOOKINGER_TEXT_DOMAIN)
+                'message' => __('この日付の予約枠は満員です', EASY_BOOKINGER_TEXT_DOMAIN)
             ));
         }
         
@@ -318,7 +318,7 @@ class EasyBookinger_Ajax {
             
             if ($current_bookings >= $time_slot->max_bookings) {
                 wp_send_json_error(array(
-                    'message' => __('この時間帯は満杯です', EASY_BOOKINGER_TEXT_DOMAIN)
+                    'message' => __('この時間帯は満員です', EASY_BOOKINGER_TEXT_DOMAIN)
                 ));
             }
         }
