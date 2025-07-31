@@ -17,10 +17,16 @@
                 maxSelectableDays: 5,
                 allowedDays: [1, 2, 3, 4, 5],
                 bookedDates: {},
+                restrictedDates: [],
+                quotasData: {},
+                enableTimeSlots: false,
+                timeSlots: [],
                 bookingFields: []
             }, options);
             
             this.bookedDates = this.settings.bookedDates;
+            this.restrictedDates = this.settings.restrictedDates;
+            this.quotasData = this.settings.quotasData;
             this.bindEvents();
             this.renderCalendar();
         },
@@ -142,14 +148,23 @@
             var isPast = date < today;
             var isSelected = this.selectedDates.indexOf(dateStr) !== -1;
             var isBooked = this.bookedDates.hasOwnProperty(dateStr);
+            var isRestricted = this.restrictedDates.indexOf(dateStr) !== -1;
             var isAllowedDay = this.settings.allowedDays.indexOf(dayOfWeek) !== -1;
+            var remainingQuota = this.quotasData[dateStr] || 0;
+            var isQuotaFull = remainingQuota <= 0;
             
             var classes = ['eb-calendar-day'];
             
             if (isOtherMonth) {
                 classes.push('other-month');
-            } else if (isPast || !isAllowedDay || isBooked) {
+            } else if (isPast || !isAllowedDay || isRestricted || isQuotaFull) {
                 classes.push('disabled');
+                if (isRestricted) {
+                    classes.push('restricted');
+                }
+                if (isQuotaFull) {
+                    classes.push('quota-full');
+                }
             } else {
                 classes.push('selectable');
             }
@@ -167,12 +182,18 @@
             }
             
             var statusText = '';
-            if (isBooked) {
-                statusText = '<div class="eb-day-status">予約済</div>';
+            if (isRestricted) {
+                statusText = '<div class="eb-day-status restricted">制限日</div>';
+            } else if (isQuotaFull) {
+                statusText = '<div class="eb-day-status quota-full">満枠</div>';
+            } else if (isBooked) {
+                statusText = '<div class="eb-day-status booked">予約済</div>';
             } else if (isPast) {
-                statusText = '<div class="eb-day-status">過去</div>';
+                statusText = '<div class="eb-day-status past">過去</div>';
             } else if (!isAllowedDay) {
-                statusText = '<div class="eb-day-status">不可</div>';
+                statusText = '<div class="eb-day-status not-allowed">不可</div>';
+            } else if (remainingQuota > 0) {
+                statusText = '<div class="eb-day-status available">残り' + remainingQuota + '</div>';
             }
             
             var $day = $('<div>')
@@ -271,6 +292,13 @@
             $('#eb-booking-form')[0].reset();
             $('.eb-form-field').removeClass('has-error');
             $('.eb-error').remove();
+            
+            // Show/hide time slots section based on settings
+            if (this.settings.enableTimeSlots && this.settings.timeSlots.length > 0) {
+                $('.eb-form-section').has('.eb-time-slots').show();
+            } else {
+                $('.eb-form-section').has('.eb-time-slots').hide();
+            }
             
             // Show modal
             $('#eb-booking-modal').show();
@@ -411,6 +439,8 @@
                 success: function(response) {
                     if (response.success) {
                         self.bookedDates = response.data.booked_dates;
+                        self.restrictedDates = response.data.restricted_dates || [];
+                        self.quotasData = response.data.quotas_data || {};
                         self.renderCalendar();
                     }
                 }

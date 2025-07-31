@@ -168,6 +168,8 @@ final class EasyBookinger {
             'display_months' => 3,
             'max_selectable_days' => 5,
             'allowed_days' => array(1, 2, 3, 4, 5), // Monday to Friday
+            'default_daily_quota' => 3, // Default daily booking quota
+            'enable_time_slots' => false, // Enable time slot functionality
             'booking_fields' => array(
                 array(
                     'name' => 'user_name',
@@ -201,6 +203,36 @@ final class EasyBookinger {
         );
         
         add_option('easy_bookinger_settings', $default_settings);
+        
+        // Add default time slots if enabled
+        $this->add_default_time_slots();
+    }
+    
+    /**
+     * Add default time slots
+     */
+    private function add_default_time_slots() {
+        // Load database class if not already loaded
+        if (!class_exists('EasyBookinger_Database')) {
+            require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-database.php';
+        }
+        
+        $database = EasyBookinger_Database::instance();
+        $existing_slots = $database->get_time_slots();
+        
+        // Only add default slots if none exist
+        if (empty($existing_slots)) {
+            $default_slots = EasyBookinger_Database::get_default_time_slots();
+            
+            foreach ($default_slots as $slot) {
+                $database->add_time_slot(
+                    $slot['start_time'],
+                    $slot['end_time'], 
+                    $slot['slot_name'],
+                    $slot['max_bookings']
+                );
+            }
+        }
     }
 }
 
