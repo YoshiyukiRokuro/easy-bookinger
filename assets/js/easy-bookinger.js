@@ -545,7 +545,51 @@
             $('#eb-booking-modal').hide();
             
             var successHtml = '<h4>' + easyBookinger.text.bookingSuccess + '</h4>';
-            successHtml += '<p>予約日: ' + data.booking_dates.join(', ') + '</p>';
+            
+            // Show booking dates
+            successHtml += '<div class="eb-booking-info">';
+            successHtml += '<h5>📅 予約日程</h5>';
+            successHtml += '<p class="eb-booking-dates">';
+            data.booking_dates.forEach(function(date, index) {
+                if (index > 0) successHtml += '<br>';
+                successHtml += date;
+            });
+            successHtml += '</p>';
+            
+            // Show time slot if available
+            if (data.time_slot) {
+                successHtml += '<p><strong>時間:</strong> ' + data.time_slot + '</p>';
+            }
+            
+            successHtml += '</div>';
+            
+            // Show form data
+            if (data.form_data && data.form_data.length > 0) {
+                successHtml += '<div class="eb-form-info">';
+                successHtml += '<h5>📝 入力内容</h5>';
+                successHtml += '<table class="eb-form-data-table">';
+                data.form_data.forEach(function(field) {
+                    successHtml += '<tr>';
+                    successHtml += '<td class="eb-field-label">' + field.label + ':</td>';
+                    successHtml += '<td class="eb-field-value">' + (field.value || '-') + '</td>';
+                    successHtml += '</tr>';
+                });
+                successHtml += '</table>';
+                successHtml += '</div>';
+            }
+            
+            // Show email confirmation
+            successHtml += '<div class="eb-email-info">';
+            successHtml += '<h5>📧 メール送信状況</h5>';
+            if (data.email_sent.user) {
+                successHtml += '<p class="eb-email-success">✅ 確認メールを送信しました</p>';
+            } else {
+                successHtml += '<p class="eb-email-notice">ℹ️ 確認メールの送信は無効になっています</p>';
+            }
+            if (data.email_sent.admin) {
+                successHtml += '<p class="eb-email-success">✅ 管理者への通知メールを送信しました</p>';
+            }
+            successHtml += '</div>';
             
             if (data.pdf_url) {
                 successHtml += '<div class="eb-pdf-info">';
