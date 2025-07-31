@@ -485,12 +485,17 @@
         
         closeModal: function() {
             $('.eb-modal').hide();
+            // If success modal was closed, reset the calendar for a new booking
+            if ($('#eb-success-modal').is(':visible')) {
+                this.resetCalendar();
+            }
         },
         
         resetCalendar: function() {
             this.selectedDates = [];
             this.renderCalendar();
             this.updateBookedDates();
+            this.updateBookButton(); // Ensure button state is reset
         },
         
         updateBookedDates: function() {

@@ -226,8 +226,15 @@ class EasyBookinger_Backup {
         // Set headers for download
         header('Content-Type: application/json; charset=UTF-8');
         header('Content-Disposition: attachment; filename="' . $full_filename . '"');
+        header('Content-Transfer-Encoding: binary');
         header('Pragma: no-cache');
+        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
         header('Expires: 0');
+        
+        // Prevent any previous output
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
         
         echo json_encode($backup_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         exit;
@@ -262,8 +269,15 @@ class EasyBookinger_Backup {
         // Set headers for download
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="' . $full_filename . '"');
+        header('Content-Transfer-Encoding: binary');
         header('Pragma: no-cache');
+        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
         header('Expires: 0');
+        
+        // Prevent any previous output
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
         
         // Add BOM for UTF-8 (helps with Excel compatibility)
         echo "\xEF\xBB\xBF";
