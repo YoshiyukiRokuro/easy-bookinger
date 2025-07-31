@@ -201,7 +201,7 @@ class EasyBookinger_Admin {
                         <tr>
                             <td><?php echo esc_html($booking->id); ?></td>
                             <td><?php echo esc_html(date('Y/m/d', strtotime($booking->booking_date))); ?></td>
-                            <td><?php echo esc_html($booking->booking_time); ?></td>
+                            <td><?php echo esc_html($this->format_booking_time($booking->booking_time)); ?></td>
                             <td><?php echo esc_html($booking->user_name); ?></td>
                             <td><a href="mailto:<?php echo esc_attr($booking->email); ?>"><?php echo esc_html($booking->email); ?></a></td>
                             <td><?php echo esc_html($booking->phone); ?></td>
@@ -984,5 +984,43 @@ class EasyBookinger_Admin {
                 }
                 break;
         }
+    }
+    
+    /**
+     * Format booking time display
+     */
+    private function format_booking_time($booking_time) {
+        // If booking_time is empty, return a dash
+        if (empty($booking_time)) {
+            return '-';
+        }
+        
+        // If booking_time is a number (time slot ID), convert it to time format
+        if (is_numeric($booking_time)) {
+            $database = EasyBookinger_Database::instance();
+            $time_slot = $database->get_time_slot_by_id((int)$booking_time);
+            
+            if ($time_slot) {
+                // Return formatted time from time slot
+                return date('H:i', strtotime($time_slot->start_time));
+            } else {
+                // Time slot not found, return the raw value
+                return $booking_time;
+            }
+        }
+        
+        // If it's already in time format (HH:MM), return as is
+        if (preg_match('/^\d{1,2}:\d{2}$/', $booking_time)) {
+            return $booking_time;
+        }
+        
+        // Try to parse as time and format it
+        $parsed_time = strtotime($booking_time);
+        if ($parsed_time !== false) {
+            return date('H:i', $parsed_time);
+        }
+        
+        // If all else fails, return the original value
+        return $booking_time;
     }
 }

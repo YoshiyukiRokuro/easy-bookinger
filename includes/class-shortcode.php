@@ -130,6 +130,7 @@ class EasyBookinger_Shortcode {
         $allowed_days = isset($settings['allowed_days']) ? $settings['allowed_days'] : array(1, 2, 3, 4, 5);
         $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
         $allow_same_day_booking = isset($settings['allow_same_day_booking']) ? $settings['allow_same_day_booking'] : true;
+        $enable_time_slots = isset($settings['enable_time_slots']) ? $settings['enable_time_slots'] : false;
         
         // Override with shortcode attributes
         if (!empty($atts['months'])) {

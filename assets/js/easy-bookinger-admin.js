@@ -28,7 +28,34 @@
         
         // Remove field
         $(document).on('click', '.remove-field', function() {
-            $(this).closest('.booking-field-row').remove();
+            var $fieldRow = $(this).closest('.booking-field-row');
+            var fieldName = $fieldRow.find('input[name*="[name]"]').val();
+            
+            // Prevent deletion of essential email fields
+            if (fieldName === 'email' || fieldName === 'email_confirm') {
+                alert('メールアドレス関連の項目は削除できません。');
+                return false;
+            }
+            
+            $fieldRow.remove();
+        });
+        
+        // Add admin email
+        $('#add-admin-email').on('click', function() {
+            var emailHtml = '<div class="admin-email-row">' +
+                '<input type="email" name="admin_emails[]" value="" placeholder="admin@example.com" style="width: 300px;" />' +
+                ' <button type="button" class="button remove-admin-email">削除</button>' +
+                '</div>';
+            $('#admin-emails-container').append(emailHtml);
+        });
+        
+        // Remove admin email
+        $(document).on('click', '.remove-admin-email', function() {
+            if ($('#admin-emails-container .admin-email-row').length > 1) {
+                $(this).closest('.admin-email-row').remove();
+            } else {
+                alert('最低1つのメールアドレスが必要です');
+            }
         });
     }
     
