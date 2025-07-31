@@ -250,13 +250,13 @@ class EasyBookinger_Shortcode {
                         
                         <?php if ($enable_time_slots && !empty($time_slots)): ?>
                         <div class="eb-form-section">
-                            <h4><?php _e('時間帯選択', EASY_BOOKINGER_TEXT_DOMAIN); ?></h4>
+                            <h4><?php _e('時間帯選択', EASY_BOOKINGER_TEXT_DOMAIN); ?> <span class="eb-required">*</span></h4>
                             <div class="eb-time-slots">
-                                <select name="booking_time_slot" class="eb-time-slot-select">
+                                <select name="booking_time_slot" class="eb-time-slot-select" required>
                                     <option value=""><?php _e('時間帯を選択してください', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
                                     <?php foreach ($time_slots as $slot): ?>
                                     <option value="<?php echo esc_attr($slot['id']); ?>">
-                                        <?php echo esc_html($slot['slot_name']); ?> (最大<?php echo esc_html($slot['max_bookings']); ?>名)
+                                        <?php echo esc_html($slot['slot_name']); ?>
                                     </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -338,14 +338,13 @@ class EasyBookinger_Shortcode {
         
         $required_attr = $required ? 'required' : '';
         $maxlength_attr = $maxlength ? "maxlength=\"{$maxlength}\"" : '';
-        $required_indicator = $required ? ' <span class="eb-required">*</span>' : '';
+        $placeholder_attr = 'placeholder="' . esc_attr($label) . '"';
         
         echo '<div class="eb-form-field">';
-        echo '<label for="eb-field-' . esc_attr($name) . '">' . esc_html($label) . $required_indicator . '</label>';
         
         switch ($type) {
             case 'textarea':
-                echo '<textarea id="eb-field-' . esc_attr($name) . '" name="' . esc_attr($name) . '" ' . $required_attr . ' ' . $maxlength_attr . '></textarea>';
+                echo '<textarea id="eb-field-' . esc_attr($name) . '" name="' . esc_attr($name) . '" ' . $placeholder_attr . ' ' . $required_attr . ' ' . $maxlength_attr . '></textarea>';
                 if ($maxlength) {
                     echo '<div class="eb-field-help">' . sprintf(__('最大%d文字', EASY_BOOKINGER_TEXT_DOMAIN), $maxlength) . '</div>';
                 }
@@ -353,7 +352,7 @@ class EasyBookinger_Shortcode {
                 
             case 'select':
                 echo '<select id="eb-field-' . esc_attr($name) . '" name="' . esc_attr($name) . '" ' . $required_attr . '>';
-                echo '<option value="">' . __('選択してください', EASY_BOOKINGER_TEXT_DOMAIN) . '</option>';
+                echo '<option value="">' . esc_html($label) . '</option>';
                 foreach ($options as $option) {
                     echo '<option value="' . esc_attr($option['value']) . '">' . esc_html($option['label']) . '</option>';
                 }
@@ -361,25 +360,31 @@ class EasyBookinger_Shortcode {
                 break;
                 
             case 'radio':
+                echo '<fieldset>';
+                echo '<legend>' . esc_html($label) . '</legend>';
                 foreach ($options as $option) {
                     echo '<label class="eb-radio-label">';
                     echo '<input type="radio" name="' . esc_attr($name) . '" value="' . esc_attr($option['value']) . '" ' . $required_attr . '>';
                     echo esc_html($option['label']);
                     echo '</label>';
                 }
+                echo '</fieldset>';
                 break;
                 
             case 'checkbox':
+                echo '<fieldset>';
+                echo '<legend>' . esc_html($label) . '</legend>';
                 foreach ($options as $option) {
                     echo '<label class="eb-checkbox-label">';
                     echo '<input type="checkbox" name="' . esc_attr($name) . '[]" value="' . esc_attr($option['value']) . '">';
                     echo esc_html($option['label']);
                     echo '</label>';
                 }
+                echo '</fieldset>';
                 break;
                 
             default:
-                echo '<input type="' . esc_attr($type) . '" id="eb-field-' . esc_attr($name) . '" name="' . esc_attr($name) . '" ' . $required_attr . ' ' . $maxlength_attr . '>';
+                echo '<input type="' . esc_attr($type) . '" id="eb-field-' . esc_attr($name) . '" name="' . esc_attr($name) . '" ' . $placeholder_attr . ' ' . $required_attr . ' ' . $maxlength_attr . '>';
                 break;
         }
         
