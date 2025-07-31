@@ -22,7 +22,8 @@
                 specialAvailability: {},
                 enableTimeSlots: false,
                 timeSlots: [],
-                bookingFields: []
+                bookingFields: [],
+                maxFutureDays: 0
             }, options);
             
             this.bookedDates = this.settings.bookedDates;
@@ -192,7 +193,7 @@
             var dayOfWeek = date.getDay();
             var today = new Date();
             var isToday = this.isSameDate(date, today);
-            var isPast = date < today;
+            var isPast = date < today && !isToday; // Don't consider today as past
             var isSelected = this.selectedDates.indexOf(dateStr) !== -1;
             var isBooked = this.bookedDates.hasOwnProperty(dateStr);
             var isRestricted = this.restrictedDates.indexOf(dateStr) !== -1;
@@ -209,6 +210,14 @@
             maxDisplayDate.setMonth(maxDisplayDate.getMonth() + this.settings.displayMonths);
             var isBeyondDisplayRange = date > maxDisplayDate;
             
+            // Check if date is beyond max future days limit
+            var isBeyondFutureLimit = false;
+            if (this.settings.maxFutureDays > 0) {
+                var maxFutureDate = new Date(today);
+                maxFutureDate.setDate(maxFutureDate.getDate() + this.settings.maxFutureDays);
+                isBeyondFutureLimit = date > maxFutureDate;
+            }
+            
             // Special availability overrides normal day restrictions
             var isSelectableDay = hasSpecialAvailability || isAllowedDay;
             
@@ -216,7 +225,7 @@
             
             if (isOtherMonth) {
                 classes.push('other-month');
-            } else if (isPast || !isSelectableDay || isRestricted || isQuotaFull || isBeyondDisplayRange || isSameDayBlocked) {
+            } else if (isPast || !isSelectableDay || isRestricted || isQuotaFull || isBeyondDisplayRange || isSameDayBlocked || isBeyondFutureLimit) {
                 classes.push('disabled');
                 if (isRestricted) {
                     classes.push('restricted');
@@ -226,6 +235,9 @@
                 }
                 if (isBeyondDisplayRange) {
                     classes.push('beyond-range');
+                }
+                if (isBeyondFutureLimit) {
+                    classes.push('beyond-future-limit');
                 }
             } else {
                 classes.push('selectable');
@@ -252,6 +264,8 @@
                 statusText = '<div class="eb-day-status unavailable">不可</div>';
             } else if (isSameDayBlocked) {
                 statusText = '<div class="eb-day-status same-day-blocked">当日不可</div>';
+            } else if (isBeyondFutureLimit) {
+                statusText = '<div class="eb-day-status beyond-future-limit">期間外</div>';
             } else if (!isSelectableDay) {
                 statusText = '<div class="eb-day-status not-allowed">不可</div>';
             } else if (isQuotaFull) {
@@ -492,6 +506,14 @@
                         message: 'メールアドレスが一致しません'
                     });
                 }
+            }
+            
+            // Time slot validation
+            if (this.settings.enableTimeSlots && (!formData.booking_time_slot || formData.booking_time_slot === '')) {
+                errors.push({
+                    field: 'booking_time_slot',
+                    message: '時間帯を選択してください'
+                });
             }
             
             return errors;

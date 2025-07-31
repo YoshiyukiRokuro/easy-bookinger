@@ -131,6 +131,7 @@ class EasyBookinger_Shortcode {
         $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
         $allow_same_day_booking = isset($settings['allow_same_day_booking']) ? $settings['allow_same_day_booking'] : true;
         $enable_time_slots = isset($settings['enable_time_slots']) ? $settings['enable_time_slots'] : false;
+        $max_future_days = isset($settings['max_future_days']) ? (int)$settings['max_future_days'] : 0;
         
         // Override with shortcode attributes
         if (!empty($atts['months'])) {
@@ -313,7 +314,8 @@ class EasyBookinger_Shortcode {
                         specialAvailability: <?php echo json_encode($special_availability_data); ?>,
                         enableTimeSlots: <?php echo json_encode($enable_time_slots); ?>,
                         timeSlots: <?php echo json_encode($time_slots); ?>,
-                        bookingFields: <?php echo json_encode($booking_fields); ?>
+                        bookingFields: <?php echo json_encode($booking_fields); ?>,
+                        maxFutureDays: <?php echo (int)$max_future_days; ?>
                     });
                 }
             });

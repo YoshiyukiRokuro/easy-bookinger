@@ -320,6 +320,8 @@
 .eb-modal-header h3 {
     margin: 0;
     color: #333;
+    font-size: 18px;
+    font-weight: 600;
 }
 
 .eb-modal-close {
@@ -623,6 +625,26 @@
     .eb-selected-date-item {
         text-align: center;
     }
+}
+
+/* Additional styles for new features */
+.eb-calendar-day.beyond-range,
+.eb-calendar-day.beyond-future-limit {
+    background-color: #f9f9f9;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.eb-day-status.beyond-future-limit {
+    background: #ff9800;
+    color: white;
+}
+
+.eb-form-section h4 {
+    font-size: 16px;
+    margin: 0 0 15px 0;
+    color: #333;
+    font-weight: 600;
 }
 
 /* Theme Variations */
