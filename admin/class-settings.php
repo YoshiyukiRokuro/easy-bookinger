@@ -211,31 +211,56 @@ class EasyBookinger_Settings {
                             <tr>
                                 <th><?php _e('タイプ', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                                 <td>
-                                    <select name="booking_fields[<?php echo esc_attr($index); ?>][type]">
-                                        <option value="text" <?php selected($field['type'], 'text'); ?>><?php _e('テキスト', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                        <option value="email" <?php selected($field['type'], 'email'); ?>><?php _e('メール', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                        <option value="tel" <?php selected($field['type'], 'tel'); ?>><?php _e('電話番号', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                        <option value="textarea" <?php selected($field['type'], 'textarea'); ?>><?php _e('テキストエリア', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                        <option value="select" <?php selected($field['type'], 'select'); ?>><?php _e('セレクト', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                        <option value="radio" <?php selected($field['type'], 'radio'); ?>><?php _e('ラジオボタン', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                        <option value="checkbox" <?php selected($field['type'], 'checkbox'); ?>><?php _e('チェックボックス', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                    </select>
+                                    <?php 
+                                    $is_email_field = in_array($field['name'], ['email', 'email_confirm']);
+                                    if ($is_email_field): ?>
+                                        <select name="booking_fields[<?php echo esc_attr($index); ?>][type]" disabled>
+                                            <option value="email" selected><?php _e('メール', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                        </select>
+                                        <input type="hidden" name="booking_fields[<?php echo esc_attr($index); ?>][type]" value="email" />
+                                        <p class="description" style="color: #666; font-style: italic;"><?php _e('※ メールアドレス項目のタイプは変更できません', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                                    <?php else: ?>
+                                        <select name="booking_fields[<?php echo esc_attr($index); ?>][type]">
+                                            <option value="text" <?php selected($field['type'], 'text'); ?>><?php _e('テキスト', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                            <option value="email" <?php selected($field['type'], 'email'); ?>><?php _e('メール', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                            <option value="tel" <?php selected($field['type'], 'tel'); ?>><?php _e('電話番号', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                            <option value="textarea" <?php selected($field['type'], 'textarea'); ?>><?php _e('テキストエリア', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                            <option value="select" <?php selected($field['type'], 'select'); ?>><?php _e('セレクト', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                            <option value="radio" <?php selected($field['type'], 'radio'); ?>><?php _e('ラジオボタン', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                            <option value="checkbox" <?php selected($field['type'], 'checkbox'); ?>><?php _e('チェックボックス', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                        </select>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <tr>
                                 <th><?php _e('必須', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                                 <td>
-                                    <label>
-                                        <input type="checkbox" name="booking_fields[<?php echo esc_attr($index); ?>][required]" value="1" <?php checked($field['required'] ?? false); ?> />
-                                        <?php _e('必須項目にする', EASY_BOOKINGER_TEXT_DOMAIN); ?>
-                                    </label>
+                                    <?php if ($is_email_field): ?>
+                                        <label>
+                                            <input type="checkbox" checked disabled />
+                                            <?php _e('必須項目にする', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                                        </label>
+                                        <input type="hidden" name="booking_fields[<?php echo esc_attr($index); ?>][required]" value="1" />
+                                        <p class="description" style="color: #666; font-style: italic;"><?php _e('※ メールアドレス項目は常に必須です', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                                    <?php else: ?>
+                                        <label>
+                                            <input type="checkbox" name="booking_fields[<?php echo esc_attr($index); ?>][required]" value="1" <?php checked($field['required'] ?? false); ?> />
+                                            <?php _e('必須項目にする', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                                        </label>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <tr>
                                 <th><?php _e('最大文字数', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                                 <td>
-                                    <input type="number" name="booking_fields[<?php echo esc_attr($index); ?>][maxlength]" value="<?php echo esc_attr($field['maxlength'] ?? ''); ?>" min="1" />
-                                    <p class="description"><?php _e('テキスト・テキストエリア項目の最大文字数（空の場合は制限なし）', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                                    <?php if ($is_email_field): ?>
+                                        <input type="number" value="256" disabled min="1" />
+                                        <input type="hidden" name="booking_fields[<?php echo esc_attr($index); ?>][maxlength]" value="256" />
+                                        <p class="description" style="color: #666; font-style: italic;"><?php _e('※ メールアドレス項目の最大文字数は256文字に固定されています', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                                    <?php else: ?>
+                                        <input type="number" name="booking_fields[<?php echo esc_attr($index); ?>][maxlength]" value="<?php echo esc_attr($field['maxlength'] ?? ''); ?>" min="1" />
+                                        <p class="description"><?php _e('テキスト・テキストエリア項目の最大文字数（空の場合は制限なし）', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         </table>
