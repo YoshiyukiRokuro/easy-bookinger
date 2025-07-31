@@ -288,13 +288,12 @@ class EasyBookinger_Shortcode {
                 <div class="eb-modal-content">
                     <div class="eb-modal-header">
                         <h3><?php _e('予約完了', EASY_BOOKINGER_TEXT_DOMAIN); ?></h3>
+                        <button class="eb-modal-close" type="button" aria-label="<?php _e('閉じる', EASY_BOOKINGER_TEXT_DOMAIN); ?>">&times;</button>
                     </div>
                     
                     <div id="eb-success-content" class="eb-success-content">
                         <!-- Success content will be populated by JavaScript -->
                     </div>
-                    
-                    <!-- Removed the close button as per requirement #5 -->
                 </div>
             </div>
         </div>

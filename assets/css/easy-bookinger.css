@@ -131,8 +131,21 @@
     font-weight: bold;
 }
 
+.eb-calendar-day.selected:focus {
+    outline: 3px solid #ffeb3b;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px #1976d2, 0 0 0 5px #ffeb3b;
+}
+
+.eb-calendar-day:focus {
+    outline: 2px solid #007cba;
+    outline-offset: 1px;
+    z-index: 1;
+}
+
 .eb-calendar-day.today {
-    border: 2px solid #ff9800;
+    border: 2px solid #e91e63;
+    box-shadow: inset 0 0 0 1px #e91e63;
 }
 
 .eb-day-number {
@@ -368,6 +381,46 @@
     border-radius: 4px;
     font-size: 14px;
     box-sizing: border-box;
+    transition: all 0.3s ease;
+    background-color: white;
+}
+
+/* Enhanced select styling for better consistency */
+.eb-form-field select {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' fill='%23666'%3E%3Cpath d='M6 7L0 1h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 35px;
+}
+
+/* Ensure all select elements in the plugin have consistent styling */
+.easy-bookinger-container select,
+.eb-modal select {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' fill='%23666'%3E%3Cpath d='M6 7L0 1h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding: 10px 35px 10px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: white;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.easy-bookinger-container select:focus,
+.eb-modal select:focus {
+    outline: none;
+    border-color: #007cba;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
 }
 
 .eb-form-field textarea {
@@ -644,18 +697,18 @@
 
 /* Special Availability Styles */
 .eb-calendar-day.special-availability {
-    background-color: #fff3e0 !important;
-    border: 2px solid #ff9800;
+    background-color: #e3f2fd !important;
+    border: 2px solid #2196f3;
     position: relative;
 }
 
 .eb-calendar-day.special-availability.selectable {
-    background-color: #fff8e1 !important;
-    color: #ef6c00;
+    background-color: #e1f5fe !important;
+    color: #0277bd;
 }
 
 .eb-calendar-day.special-availability.selectable:hover {
-    background-color: #ffecb3 !important;
+    background-color: #b3e5fc !important;
 }
 
 .eb-calendar-day.special-availability::before {
@@ -663,7 +716,7 @@
     position: absolute;
     top: 2px;
     right: 2px;
-    background: #ff9800;
+    background: #2196f3;
     color: white;
     font-size: 10px;
     padding: 1px 3px;
@@ -673,9 +726,9 @@
 
 .eb-day-special {
     font-size: 10px;
-    color: #ef6c00;
-    background: #fff3e0;
-    border: 1px solid #ff9800;
+    color: #0277bd;
+    background: #e3f2fd;
+    border: 1px solid #2196f3;
     border-radius: 2px;
     padding: 1px 3px;
     margin-top: 2px;
@@ -685,12 +738,12 @@
 
 /* Dark theme special availability */
 .easy-bookinger-theme-dark .eb-calendar-day.special-availability {
-    background-color: #444 !important;
-    border-color: #ff9800;
+    background-color: #1a1a2e !important;
+    border-color: #2196f3;
 }
 
 .easy-bookinger-theme-dark .eb-day-special {
-    background: #333;
-    color: #ffb74d;
-    border-color: #ff9800;
+    background: #1a1a2e;
+    color: #64b5f6;
+    border-color: #2196f3;
 }
