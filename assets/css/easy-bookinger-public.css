@@ -1,0 +1,91 @@
+/* Easy Bookinger Public Styles */
+
+/* Base public styles that don't conflict with theme */
+.easy-bookinger-container {
+    font-family: inherit;
+    line-height: inherit;
+}
+
+/* Ensure consistent spacing */
+.easy-bookinger-container * {
+    box-sizing: border-box;
+}
+
+/* Reset for potential theme conflicts */
+.easy-bookinger-container .eb-button,
+.easy-bookinger-container .eb-calendar-day,
+.easy-bookinger-container .eb-form-field input,
+.easy-bookinger-container .eb-form-field textarea,
+.easy-bookinger-container .eb-form-field select {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+/* Responsive image adjustments */
+.easy-bookinger-container img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Print styles */
+@media print {
+    .easy-bookinger-container .eb-modal {
+        display: none !important;
+    }
+    
+    .easy-bookinger-container .eb-calendar-actions {
+        display: none !important;
+    }
+}
+
+/* Accessibility improvements */
+.easy-bookinger-container .eb-calendar-day:focus {
+    outline: 2px solid #007cba;
+    outline-offset: 2px;
+}
+
+.easy-bookinger-container .eb-button:focus {
+    outline: 2px solid #007cba;
+    outline-offset: 2px;
+}
+
+.easy-bookinger-container .eb-form-field input:focus,
+.easy-bookinger-container .eb-form-field textarea:focus,
+.easy-bookinger-container .eb-form-field select:focus {
+    outline: 2px solid #007cba;
+    outline-offset: 1px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .easy-bookinger-container .eb-calendar-day.selectable {
+        border: 2px solid #000;
+    }
+    
+    .easy-bookinger-container .eb-calendar-day.selected {
+        background: #000 !important;
+        color: #fff !important;
+    }
+    
+    .easy-bookinger-container .eb-button.eb-primary {
+        background: #000 !important;
+        color: #fff !important;
+        border: 2px solid #000;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .easy-bookinger-container *,
+    .easy-bookinger-container *::before,
+    .easy-bookinger-container *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .easy-bookinger-container .eb-spinner {
+        animation: none !important;
+    }
+}

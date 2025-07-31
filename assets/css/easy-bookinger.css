@@ -1,0 +1,546 @@
+/* Easy Bookinger Main Styles */
+
+.easy-bookinger-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+}
+
+/* Calendar Styles */
+.eb-calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.eb-nav-btn {
+    background: #007cba;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.eb-nav-btn:hover {
+    background: #005a87;
+}
+
+.eb-nav-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.eb-current-month {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+}
+
+.eb-calendar-grid {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+}
+
+.eb-calendar-days-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background-color: #f1f1f1;
+}
+
+.eb-day-header {
+    padding: 15px 10px;
+    text-align: center;
+    font-weight: bold;
+    color: #333;
+    border-right: 1px solid #ddd;
+}
+
+.eb-day-header:last-child {
+    border-right: none;
+}
+
+.eb-calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    min-height: 300px;
+}
+
+.eb-calendar-day {
+    padding: 15px 10px;
+    text-align: center;
+    border-right: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.eb-calendar-day:nth-child(7n) {
+    border-right: none;
+}
+
+.eb-calendar-day.other-month {
+    color: #ccc;
+    background-color: #f9f9f9;
+    cursor: not-allowed;
+}
+
+.eb-calendar-day.disabled {
+    color: #999;
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.eb-calendar-day.booked {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.eb-calendar-day.selectable {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+}
+
+.eb-calendar-day.selectable:hover {
+    background-color: #c8e6c9;
+}
+
+.eb-calendar-day.selected {
+    background-color: #1976d2;
+    color: white;
+    font-weight: bold;
+}
+
+.eb-calendar-day.today {
+    border: 2px solid #ff9800;
+}
+
+.eb-day-number {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.eb-day-status {
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+/* Selected Dates */
+.eb-selected-dates {
+    margin: 30px 0;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.eb-selected-dates h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.eb-selected-dates-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.eb-selected-date-item {
+    background: #007cba;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 14px;
+    position: relative;
+}
+
+.eb-selected-date-remove {
+    margin-left: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.eb-selected-date-remove:hover {
+    color: #ffeb3b;
+}
+
+/* Calendar Actions */
+.eb-calendar-actions {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.eb-button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.eb-button.eb-primary {
+    background: #007cba;
+    color: white;
+}
+
+.eb-button.eb-primary:hover {
+    background: #005a87;
+}
+
+.eb-button.eb-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.eb-button.eb-secondary:hover {
+    background: #545b62;
+}
+
+.eb-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Modal Styles */
+.eb-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.eb-modal-content {
+    background: white;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.eb-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.eb-modal-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.eb-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #999;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.eb-modal-close:hover {
+    color: #333;
+}
+
+/* Form Styles */
+.eb-form-section {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.eb-form-section:last-child {
+    border-bottom: none;
+}
+
+.eb-form-section h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.eb-form-selected-dates {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.eb-form-field {
+    margin-bottom: 20px;
+}
+
+.eb-form-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+.eb-required {
+    color: #d32f2f;
+}
+
+.eb-form-field input,
+.eb-form-field textarea,
+.eb-form-field select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.eb-form-field textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.eb-form-field input:focus,
+.eb-form-field textarea:focus,
+.eb-form-field select:focus {
+    outline: none;
+    border-color: #007cba;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
+}
+
+.eb-field-help {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+}
+
+.eb-radio-label,
+.eb-checkbox-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: normal;
+}
+
+.eb-radio-label input,
+.eb-checkbox-label input {
+    width: auto;
+    margin-right: 8px;
+}
+
+.eb-form-actions {
+    padding: 20px;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Success Content */
+.eb-success-content {
+    padding: 20px;
+}
+
+.eb-success-content h4 {
+    color: #2e7d32;
+    margin-bottom: 15px;
+}
+
+.eb-pdf-info {
+    background: #e8f4fd;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+    border-left: 4px solid #007cba;
+}
+
+.eb-pdf-link {
+    display: inline-block;
+    background: #007cba;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.eb-pdf-link:hover {
+    background: #005a87;
+}
+
+.eb-password {
+    font-family: monospace;
+    font-size: 16px;
+    font-weight: bold;
+    background: #f0f0f0;
+    padding: 8px 12px;
+    border-radius: 3px;
+    display: inline-block;
+    margin: 5px 0;
+}
+
+/* Error Styles */
+.eb-error {
+    color: #d32f2f;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.eb-form-field.has-error input,
+.eb-form-field.has-error textarea,
+.eb-form-field.has-error select {
+    border-color: #d32f2f;
+}
+
+/* Loading Styles */
+.eb-loading {
+    text-align: center;
+    padding: 20px;
+}
+
+.eb-spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007cba;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .eb-calendar-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .eb-current-month {
+        font-size: 20px;
+    }
+    
+    .eb-nav-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+    
+    .eb-calendar-day {
+        min-height: 50px;
+        padding: 10px 5px;
+    }
+    
+    .eb-day-number {
+        font-size: 14px;
+    }
+    
+    .eb-day-status {
+        font-size: 10px;
+    }
+    
+    .eb-modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .eb-form-actions {
+        flex-direction: column;
+    }
+    
+    .eb-button {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .eb-calendar-days {
+        font-size: 12px;
+    }
+    
+    .eb-calendar-day {
+        min-height: 40px;
+        padding: 8px 3px;
+    }
+    
+    .eb-day-number {
+        font-size: 12px;
+    }
+    
+    .eb-selected-dates-list {
+        flex-direction: column;
+    }
+    
+    .eb-selected-date-item {
+        text-align: center;
+    }
+}
+
+/* Theme Variations */
+.easy-bookinger-theme-minimal .eb-calendar-header {
+    background: none;
+    border-bottom: 1px solid #ddd;
+    border-radius: 0;
+}
+
+.easy-bookinger-theme-minimal .eb-calendar-grid {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.easy-bookinger-theme-dark {
+    background: #333;
+    color: white;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.easy-bookinger-theme-dark .eb-calendar-header {
+    background: #444;
+    color: white;
+}
+
+.easy-bookinger-theme-dark .eb-calendar-day {
+    background: #555;
+    color: white;
+    border-color: #666;
+}
+
+.easy-bookinger-theme-dark .eb-calendar-day.selectable {
+    background: #2e7d32;
+}
+
+.easy-bookinger-theme-dark .eb-calendar-day.selected {
+    background: #1976d2;
+}
