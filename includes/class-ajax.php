@@ -134,6 +134,9 @@ class EasyBookinger_Ajax {
             if ($time_slot) {
                 $booking_time = date('H:i', strtotime($time_slot->start_time));
             }
+        } elseif (isset($form_data['booking_time']) && !empty($form_data['booking_time'])) {
+            // Handle manual time input if time slots are not used
+            $booking_time = sanitize_text_field($form_data['booking_time']);
         }
         
         foreach ($booking_dates as $date) {
@@ -208,6 +211,14 @@ class EasyBookinger_Ajax {
             }
         }
         
+        // Determine what time information to show in the response
+        $display_time = null;
+        if ($time_slot_display) {
+            $display_time = $time_slot_display['formatted_time'];
+        } elseif (!empty($booking_time)) {
+            $display_time = $booking_time;
+        }
+        
         wp_send_json_success(array(
             'message' => __('予約が完了しました', EASY_BOOKINGER_TEXT_DOMAIN),
             'booking_ids' => $booking_ids,
@@ -215,7 +226,7 @@ class EasyBookinger_Ajax {
             'booking_time' => $booking_time,
             'form_data' => $display_form_data,
             'email_sent' => $email_sent,
-            'time_slot' => $time_slot_display ? $time_slot_display['formatted_time'] : null,
+            'time_slot' => $display_time,
             'time_slot_info' => $time_slot_display
         ));
     }
