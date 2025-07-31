@@ -170,6 +170,7 @@ final class EasyBookinger {
             'allowed_days' => array(1, 2, 3, 4, 5), // Monday to Friday
             'default_daily_quota' => 3, // Default daily booking quota
             'enable_time_slots' => false, // Enable time slot functionality
+            'allow_same_day_booking' => true, // Allow same-day booking by default
             'booking_fields' => array(
                 array(
                     'name' => 'user_name',

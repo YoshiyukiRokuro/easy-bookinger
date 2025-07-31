@@ -135,6 +135,17 @@ class EasyBookinger_Settings {
                             <p class="description"><?php _e('有効にすると、予約フォームで時間帯を選択できるようになります。時間帯は「時間帯設定」ページで管理できます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
                         </td>
                     </tr>
+                    
+                    <tr>
+                        <th scope="row"><?php _e('当日予約', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="allow_same_day_booking" value="1" <?php checked($settings['allow_same_day_booking'] ?? true); ?> />
+                                <?php _e('当日予約を許可する', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                            </label>
+                            <p class="description"><?php _e('無効にすると、当日の予約ができなくなります。予約は翌日以降のみ可能になります。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                        </td>
+                    </tr>
                 </table>
                 
                 <h2><?php _e('フォーム設定', EASY_BOOKINGER_TEXT_DOMAIN); ?></h2>
@@ -277,6 +288,7 @@ class EasyBookinger_Settings {
             'user_email_enabled' => isset($_POST['user_email_enabled']),
             'default_daily_quota' => intval($_POST['default_daily_quota']),
             'enable_time_slots' => isset($_POST['enable_time_slots']),
+            'allow_same_day_booking' => isset($_POST['allow_same_day_booking']),
             'booking_fields' => array()
         );
         

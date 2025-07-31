@@ -129,7 +129,7 @@ class EasyBookinger_Shortcode {
         $max_selectable_days = isset($settings['max_selectable_days']) ? (int)$settings['max_selectable_days'] : 5;
         $allowed_days = isset($settings['allowed_days']) ? $settings['allowed_days'] : array(1, 2, 3, 4, 5);
         $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
-        $enable_time_slots = isset($settings['enable_time_slots']) ? $settings['enable_time_slots'] : false;
+        $allow_same_day_booking = isset($settings['allow_same_day_booking']) ? $settings['allow_same_day_booking'] : true;
         
         // Override with shortcode attributes
         if (!empty($atts['months'])) {
@@ -305,6 +305,7 @@ class EasyBookinger_Shortcode {
                         displayMonths: <?php echo (int)$display_months; ?>,
                         maxSelectableDays: <?php echo (int)$max_selectable_days; ?>,
                         allowedDays: <?php echo json_encode(array_map('intval', $allowed_days)); ?>,
+                        allowSameDayBooking: <?php echo json_encode($allow_same_day_booking); ?>,
                         bookedDates: <?php echo json_encode($booked_dates); ?>,
                         restrictedDates: <?php echo json_encode($restricted_dates_array); ?>,
                         quotasData: <?php echo json_encode($quotas_data); ?>,
