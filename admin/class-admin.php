@@ -68,6 +68,15 @@ class EasyBookinger_Admin {
         
         add_submenu_page(
             'easy-bookinger',
+            __('バックアップ・復元', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('バックアップ・復元', EASY_BOOKINGER_TEXT_DOMAIN),
+            'manage_options',
+            'easy-bookinger-backup',
+            array($this, 'backup_page')
+        );
+        
+        add_submenu_page(
+            'easy-bookinger',
             __('日付制限', EASY_BOOKINGER_TEXT_DOMAIN),
             __('日付制限', EASY_BOOKINGER_TEXT_DOMAIN),
             'manage_options',
@@ -142,8 +151,9 @@ class EasyBookinger_Admin {
             $this->handle_booking_action($_GET['action'], intval($_GET['booking_id']));
         }
         
-        // Get bookings
+        // Get bookings (include all statuses)
         $bookings = $database->get_bookings(array(
+            'status' => '', // Empty status to get all bookings
             'orderby' => 'created_at',
             'order' => 'DESC',
             'limit' => 50
@@ -245,6 +255,14 @@ class EasyBookinger_Admin {
     public function export_page() {
         $export_handler = new EasyBookinger_Export();
         $export_handler->render_export_page();
+    }
+    
+    /**
+     * Backup page
+     */
+    public function backup_page() {
+        $backup_handler = new EasyBookinger_Backup();
+        $backup_handler->render_backup_page();
     }
     
     /**
@@ -443,12 +461,7 @@ class EasyBookinger_Admin {
                                     ?>
                                 </td>
                                 <td>
-                                    <form method="post" style="display: inline;">
-                                        <?php wp_nonce_field('eb_quotas_action', 'eb_quotas_nonce'); ?>
-                                        <input type="hidden" name="action" value="update_quota_count">
-                                        <input type="hidden" name="quota_date" value="<?php echo esc_attr($quota->quota_date); ?>">
-                                        <input type="submit" class="button button-small" value="<?php _e('更新', EASY_BOOKINGER_TEXT_DOMAIN); ?>">
-                                    </form>
+                                    <!-- Update button removed - quota counts are automatically calculated -->
                                 </td>
                             </tr>
                             <?php endforeach; ?>

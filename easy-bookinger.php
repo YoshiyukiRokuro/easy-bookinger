@@ -87,6 +87,7 @@ final class EasyBookinger {
             require_once EASY_BOOKINGER_PLUGIN_DIR . 'admin/class-admin.php';
             require_once EASY_BOOKINGER_PLUGIN_DIR . 'admin/class-settings.php';
             require_once EASY_BOOKINGER_PLUGIN_DIR . 'admin/class-export.php';
+            require_once EASY_BOOKINGER_PLUGIN_DIR . 'admin/class-backup.php';
         }
         
         // Public includes
