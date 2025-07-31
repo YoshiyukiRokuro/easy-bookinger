@@ -50,6 +50,141 @@
 }
 
 .status-active {
+    background: #c8e6c9;
+    color: #2e7d32;
+}
+
+.status-inactive {
+    background: #ffcdd2;
+    color: #c62828;
+}
+
+/* New admin sections styling */
+.eb-admin-section {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 30px;
+    padding: 0;
+    overflow: hidden;
+}
+
+.eb-admin-section h2 {
+    background: #f8f9fa;
+    margin: 0;
+    padding: 15px 20px;
+    border-bottom: 1px solid #ddd;
+    color: #333;
+}
+
+.eb-admin-section h3 {
+    margin: 20px 20px 15px 20px;
+    color: #333;
+}
+
+.eb-admin-section .form-table {
+    margin: 20px;
+}
+
+.eb-admin-section .wp-list-table {
+    margin: 20px;
+    width: calc(100% - 40px);
+}
+
+.eb-admin-section .submit {
+    margin: 0 20px 20px 20px;
+}
+
+/* Date restrictions styling */
+.eb-restriction-type {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.eb-restriction-type.holiday {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.eb-restriction-type.closed {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.eb-restriction-type.custom {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+/* Quota management styling */
+.eb-quota-status {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.eb-quota-status.available {
+    background: #c8e6c9;
+    color: #2e7d32;
+}
+
+.eb-quota-status.full {
+    background: #ffcdd2;
+    color: #c62828;
+}
+
+.eb-quota-status.partial {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+/* Time slots styling */
+.eb-timeslot-status {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.eb-timeslot-status.active {
+    background: #c8e6c9;
+    color: #2e7d32;
+}
+
+.eb-timeslot-status.inactive {
+    background: #f5f5f5;
+    color: #757575;
+}
+
+/* Responsive admin styles */
+@media (max-width: 768px) {
+    .eb-admin-section .form-table,
+    .eb-admin-section .wp-list-table {
+        margin: 10px;
+        width: calc(100% - 20px);
+    }
+    
+    .eb-admin-section .submit {
+        margin: 0 10px 10px 10px;
+    }
+    
+    .wp-list-table {
+        font-size: 14px;
+    }
+    
+    .wp-list-table th,
+    .wp-list-table td {
+        padding: 8px 4px;
+    }
+}
+
+.status-active {
     background: #d4edda;
     color: #155724;
 }

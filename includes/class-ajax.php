@@ -29,6 +29,12 @@ class EasyBookinger_Ajax {
         
         add_action('wp_ajax_eb_download_pdf', array($this, 'download_pdf'));
         add_action('wp_ajax_nopriv_eb_download_pdf', array($this, 'download_pdf'));
+        
+        add_action('wp_ajax_eb_get_time_slots', array($this, 'get_time_slots'));
+        add_action('wp_ajax_nopriv_eb_get_time_slots', array($this, 'get_time_slots'));
+        
+        add_action('wp_ajax_eb_check_availability', array($this, 'check_availability'));
+        add_action('wp_ajax_nopriv_eb_check_availability', array($this, 'check_availability'));
     }
     
     /**
@@ -72,14 +78,23 @@ class EasyBookinger_Ajax {
             ));
         }
         
-        // Check if dates are available
+        // Check if dates are available (not restricted and within quota)
         $database = EasyBookinger_Database::instance();
         $booked_dates = $database->get_booked_dates();
         
         foreach ($booking_dates as $date) {
-            if (isset($booked_dates[$date])) {
+            // Check date restrictions
+            if ($database->is_date_restricted($date)) {
                 wp_send_json_error(array(
-                    'message' => sprintf(__('選択された日付（%s）は既に予約済みです', EASY_BOOKINGER_TEXT_DOMAIN), $date)
+                    'message' => sprintf(__('選択された日付（%s）は予約できません', EASY_BOOKINGER_TEXT_DOMAIN), $date)
+                ));
+            }
+            
+            // Check quota availability
+            $remaining_quota = $database->get_remaining_quota($date);
+            if ($remaining_quota <= 0) {
+                wp_send_json_error(array(
+                    'message' => sprintf(__('選択された日付（%s）は予約枠が満杯です', EASY_BOOKINGER_TEXT_DOMAIN), $date)
                 ));
             }
         }
@@ -88,11 +103,12 @@ class EasyBookinger_Ajax {
         $booking_ids = array();
         $pdf_token = wp_generate_password(32, false);
         $pdf_password = wp_generate_password(12, false);
+        $time_slot_id = isset($form_data['booking_time_slot']) ? (int)$form_data['booking_time_slot'] : null;
         
         foreach ($booking_dates as $date) {
             $booking_data = array(
                 'booking_date' => $date,
-                'booking_time' => sanitize_text_field($form_data['booking_time'] ?? ''),
+                'booking_time' => $time_slot_id ? (string)$time_slot_id : '',
                 'user_name' => sanitize_text_field($form_data['user_name']),
                 'email' => sanitize_email($form_data['email']),
                 'phone' => sanitize_text_field($form_data['phone'] ?? ''),
@@ -112,6 +128,11 @@ class EasyBookinger_Ajax {
             wp_send_json_error(array(
                 'message' => __('予約の登録に失敗しました', EASY_BOOKINGER_TEXT_DOMAIN)
             ));
+        }
+        
+        // Update booking quotas for registered dates
+        foreach ($booking_dates as $date) {
+            $database->update_booking_quota_count($date);
         }
         
         // Send emails
@@ -167,10 +188,124 @@ class EasyBookinger_Ajax {
         $database = EasyBookinger_Database::instance();
         $booked_dates = $database->get_booked_dates($date_from, $date_to);
         
+        // Get restricted dates
+        $restricted_dates = $database->get_restricted_dates($date_from, $date_to);
+        $restricted_dates_array = array();
+        foreach ($restricted_dates as $restriction) {
+            $restricted_dates_array[] = $restriction->restriction_date;
+        }
+        
+        // Get quotas and calculate remaining slots
+        $quotas_data = array();
+        $current_date = $date_from;
+        while ($current_date <= $date_to) {
+            $remaining = $database->get_remaining_quota($current_date);
+            $quotas_data[$current_date] = $remaining;
+            $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
+        }
+        
         wp_send_json_success(array(
             'booked_dates' => $booked_dates,
+            'restricted_dates' => $restricted_dates_array,
+            'quotas_data' => $quotas_data,
             'allowed_days' => $allowed_days,
             'current_date' => date('Y-m-d')
+        ));
+    }
+    
+    /**
+     * Get time slots
+     */
+    public function get_time_slots() {
+        // Verify nonce
+        if (!wp_verify_nonce($_GET['nonce'], 'easy_bookinger_nonce')) {
+            wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
+        }
+        
+        $database = EasyBookinger_Database::instance();
+        $time_slots = $database->get_active_time_slots();
+        
+        $formatted_slots = array();
+        foreach ($time_slots as $slot) {
+            $formatted_slots[] = array(
+                'id' => $slot->id,
+                'start_time' => $slot->start_time,
+                'end_time' => $slot->end_time,
+                'slot_name' => $slot->slot_name ?: (date('H:i', strtotime($slot->start_time)) . '-' . date('H:i', strtotime($slot->end_time))),
+                'max_bookings' => $slot->max_bookings
+            );
+        }
+        
+        wp_send_json_success(array(
+            'time_slots' => $formatted_slots
+        ));
+    }
+    
+    /**
+     * Check availability for a specific date and time
+     */
+    public function check_availability() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'easy_bookinger_nonce')) {
+            wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
+        }
+        
+        $date = sanitize_text_field($_POST['date']);
+        $time_slot_id = isset($_POST['time_slot_id']) ? (int)$_POST['time_slot_id'] : null;
+        
+        $database = EasyBookinger_Database::instance();
+        
+        // Check if date is restricted
+        if ($database->is_date_restricted($date)) {
+            wp_send_json_error(array(
+                'message' => __('この日付は予約できません', EASY_BOOKINGER_TEXT_DOMAIN)
+            ));
+        }
+        
+        // Check quota
+        $remaining_quota = $database->get_remaining_quota($date);
+        if ($remaining_quota <= 0) {
+            wp_send_json_error(array(
+                'message' => __('この日付の予約枠は満杯です', EASY_BOOKINGER_TEXT_DOMAIN)
+            ));
+        }
+        
+        // If time slot is specified, check time slot availability
+        if ($time_slot_id) {
+            global $wpdb;
+            $bookings_table = $wpdb->prefix . 'easy_bookinger_bookings';
+            $slots_table = $wpdb->prefix . 'easy_bookinger_time_slots';
+            
+            // Get time slot info
+            $time_slot = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $slots_table WHERE id = %d AND is_active = 1",
+                $time_slot_id
+            ));
+            
+            if (!$time_slot) {
+                wp_send_json_error(array(
+                    'message' => __('無効な時間帯です', EASY_BOOKINGER_TEXT_DOMAIN)
+                ));
+            }
+            
+            // Check current bookings for this time slot
+            $current_bookings = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND booking_time = %s AND status = 'active'",
+                $date,
+                $time_slot->id
+            ));
+            
+            if ($current_bookings >= $time_slot->max_bookings) {
+                wp_send_json_error(array(
+                    'message' => __('この時間帯は満杯です', EASY_BOOKINGER_TEXT_DOMAIN)
+                ));
+            }
+        }
+        
+        wp_send_json_success(array(
+            'available' => true,
+            'remaining_quota' => $remaining_quota,
+            'message' => __('予約可能です', EASY_BOOKINGER_TEXT_DOMAIN)
         ));
     }
     

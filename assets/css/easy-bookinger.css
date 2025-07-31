@@ -142,6 +142,47 @@
     background: rgba(255, 255, 255, 0.8);
 }
 
+.eb-day-status.restricted {
+    background-color: #ffcdd2;
+    color: #c62828;
+}
+
+.eb-day-status.quota-full {
+    background-color: #fff3e0;
+    color: #ef6c00;
+}
+
+.eb-day-status.available {
+    background-color: #c8e6c9;
+    color: #2e7d32;
+}
+
+.eb-day-status.booked {
+    background-color: #ffcdd2;
+    color: #c62828;
+}
+
+.eb-day-status.past {
+    background-color: #f5f5f5;
+    color: #757575;
+}
+
+.eb-day-status.not-allowed {
+    background-color: #f5f5f5;
+    color: #757575;
+}
+
+/* Enhanced calendar day styles */
+.eb-calendar-day.restricted {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.eb-calendar-day.quota-full {
+    background-color: #fff3e0;
+    color: #ef6c00;
+}
+
 /* Selected Dates */
 .eb-selected-dates {
     margin: 30px 0;
@@ -543,4 +584,54 @@
 
 .easy-bookinger-theme-dark .eb-calendar-day.selected {
     background: #1976d2;
+}
+
+/* Time Slots Styles */
+.eb-time-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.eb-time-slot-option {
+    display: block;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: white;
+}
+
+.eb-time-slot-option:hover {
+    border-color: #007cba;
+    background: #f8f9fa;
+}
+
+.eb-time-slot-option input[type="radio"] {
+    margin-right: 8px;
+    width: auto;
+}
+
+.eb-time-slot-option input[type="radio"]:checked + .eb-time-slot-label {
+    color: #007cba;
+    font-weight: bold;
+}
+
+.eb-time-slot-option:has(input[type="radio"]:checked) {
+    border-color: #007cba;
+    background: #e8f4fd;
+}
+
+.eb-time-slot-label {
+    display: block;
+    font-weight: 500;
+}
+
+.eb-time-slot-info {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
 }

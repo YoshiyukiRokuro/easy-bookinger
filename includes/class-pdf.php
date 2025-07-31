@@ -16,69 +16,94 @@ class EasyBookinger_PDF {
     public function generate_booking_pdf($booking) {
         // Load TCPDF
         if (!class_exists('TCPDF')) {
-            require_once EASY_BOOKINGER_PLUGIN_DIR . 'vendor/tcpdf/tcpdf.php';
+            $tcpdf_path = EASY_BOOKINGER_PLUGIN_DIR . 'vendor/tcpdf/tcpdf.php';
+            if (!file_exists($tcpdf_path)) {
+                wp_die(__('PDFライブラリが見つかりません。管理者にお問い合わせください。', EASY_BOOKINGER_TEXT_DOMAIN));
+            }
+            require_once $tcpdf_path;
         }
         
-        // Create new PDF document
-        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-        
-        // Set document information
-        $pdf->SetCreator(get_bloginfo('name'));
-        $pdf->SetAuthor(get_bloginfo('name'));
-        $pdf->SetTitle(__('予約確認書', EASY_BOOKINGER_TEXT_DOMAIN));
-        $pdf->SetSubject(__('予約確認書', EASY_BOOKINGER_TEXT_DOMAIN));
-        
-        // Set default header data
-        $pdf->SetHeaderData('', 0, get_bloginfo('name'), __('予約確認書', EASY_BOOKINGER_TEXT_DOMAIN));
-        
-        // Set header and footer fonts
-        $pdf->setHeaderFont(Array('hiragino', '', 12));
-        $pdf->setFooterFont(Array('hiragino', '', 10));
-        
-        // Set default monospaced font
-        $pdf->SetDefaultMonospacedFont('courier');
-        
-        // Set margins
-        $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
-        $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
-        $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
-        
-        // Set auto page breaks
-        $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
-        
-        // Set image scale factor
-        $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
-        
-        // Add a page
-        $pdf->AddPage();
-        
-        // Set font for Japanese
-        $pdf->SetFont('hiragino', '', 12);
-        
-        // Get form data
-        $form_data = maybe_unserialize($booking->form_data);
-        $settings = get_option('easy_bookinger_settings', array());
-        $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
-        
-        // Generate PDF content
-        $html = $this->get_pdf_content($booking, $form_data, $booking_fields);
-        
-        // Print content
-        $pdf->writeHTML($html, true, false, true, false, '');
-        
-        // Set password protection if password exists
-        if (!empty($booking->pdf_password)) {
-            $pdf->SetProtection(array('print', 'copy'), $booking->pdf_password, null, 0, null);
+        try {
+            // Create uploads directory for PDFs if it doesn't exist
+            $upload_dir = wp_upload_dir();
+            $pdf_dir = $upload_dir['basedir'] . '/easy-bookinger-pdfs';
+            
+            if (!file_exists($pdf_dir)) {
+                wp_mkdir_p($pdf_dir);
+            }
+            
+            // Create .htaccess file to protect PDF directory
+            $htaccess_file = $pdf_dir . '/.htaccess';
+            if (!file_exists($htaccess_file)) {
+                file_put_contents($htaccess_file, "deny from all\n");
+            }
+            
+            // Create new PDF document
+            $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+            
+            // Set document information
+            $pdf->SetCreator(get_bloginfo('name'));
+            $pdf->SetAuthor(get_bloginfo('name'));
+            $pdf->SetTitle(__('予約確認書', EASY_BOOKINGER_TEXT_DOMAIN));
+            $pdf->SetSubject(__('予約確認書', EASY_BOOKINGER_TEXT_DOMAIN));
+            
+            // Set default header data
+            $pdf->SetHeaderData('', 0, get_bloginfo('name'), __('予約確認書', EASY_BOOKINGER_TEXT_DOMAIN));
+            
+            // Set header and footer fonts
+            $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+            $pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+            
+            // Set default monospaced font
+            $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+            
+            // Set margins
+            $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+            $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+            $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+            
+            // Set auto page breaks
+            $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+            
+            // Set image scale factor
+            $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+            
+            // Add a page
+            $pdf->AddPage();
+            
+            // Set font for content
+            $pdf->SetFont('helvetica', '', 12);
+            
+            // Get form data
+            $form_data = maybe_unserialize($booking->form_data);
+            $settings = get_option('easy_bookinger_settings', array());
+            $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
+            
+            // Generate PDF content
+            $html = $this->get_pdf_content($booking, $form_data, $booking_fields);
+            
+            // Print content
+            $pdf->writeHTML($html, true, false, true, false, '');
+            
+            // Set password protection if password exists
+            if (!empty($booking->pdf_password)) {
+                $pdf->SetProtection(array('print', 'copy'), $booking->pdf_password, null, 0, null);
+            }
+            
+            // Generate filename
+            $filename = sprintf('booking_%s_%s.pdf', 
+                $booking->id, 
+                date('Ymd', strtotime($booking->booking_date))
+            );
+            
+            // Output PDF for download
+            $pdf->Output($filename, 'D');
+            exit;
+            
+        } catch (Exception $e) {
+            error_log('Easy Bookinger PDF Error: ' . $e->getMessage());
+            wp_die(__('PDFの生成中にエラーが発生しました。しばらく時間をおいて再試行してください。', EASY_BOOKINGER_TEXT_DOMAIN));
         }
-        
-        // Close and output PDF document
-        $filename = sprintf('booking_%s_%s.pdf', 
-            $booking->id, 
-            date('Ymd', strtotime($booking->booking_date))
-        );
-        
-        $pdf->Output($filename, 'D');
-        exit;
     }
     
     /**
@@ -126,7 +151,27 @@ class EasyBookinger_PDF {
                     <?php if (!empty($booking->booking_time)): ?>
                     <tr>
                         <th>時間</th>
-                        <td><?php echo esc_html($booking->booking_time); ?></td>
+                        <td>
+                            <?php 
+                            // If booking_time is a time slot ID, get the time slot name
+                            if (is_numeric($booking->booking_time)) {
+                                global $wpdb;
+                                $slots_table = $wpdb->prefix . 'easy_bookinger_time_slots';
+                                $time_slot = $wpdb->get_row($wpdb->prepare(
+                                    "SELECT * FROM $slots_table WHERE id = %d",
+                                    $booking->booking_time
+                                ));
+                                
+                                if ($time_slot) {
+                                    echo esc_html($time_slot->slot_name ?: (date('H:i', strtotime($time_slot->start_time)) . '-' . date('H:i', strtotime($time_slot->end_time))));
+                                } else {
+                                    echo esc_html($booking->booking_time);
+                                }
+                            } else {
+                                echo esc_html($booking->booking_time);
+                            }
+                            ?>
+                        </td>
                     </tr>
                     <?php endif; ?>
                     <tr>

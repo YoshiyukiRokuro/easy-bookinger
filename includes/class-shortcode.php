@@ -129,6 +129,7 @@ class EasyBookinger_Shortcode {
         $max_selectable_days = isset($settings['max_selectable_days']) ? (int)$settings['max_selectable_days'] : 5;
         $allowed_days = isset($settings['allowed_days']) ? $settings['allowed_days'] : array(1, 2, 3, 4, 5);
         $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
+        $enable_time_slots = isset($settings['enable_time_slots']) ? $settings['enable_time_slots'] : false;
         
         // Override with shortcode attributes
         if (!empty($atts['months'])) {
@@ -141,6 +142,37 @@ class EasyBookinger_Shortcode {
         
         $database = EasyBookinger_Database::instance();
         $booked_dates = $database->get_booked_dates($date_from, $date_to);
+        
+        // Get restricted dates
+        $restricted_dates = $database->get_restricted_dates($date_from, $date_to);
+        $restricted_dates_array = array();
+        foreach ($restricted_dates as $restriction) {
+            $restricted_dates_array[] = $restriction->restriction_date;
+        }
+        
+        // Get quotas data
+        $quotas_data = array();
+        $current_date = $date_from;
+        while ($current_date <= $date_to) {
+            $remaining = $database->get_remaining_quota($current_date);
+            $quotas_data[$current_date] = $remaining;
+            $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
+        }
+        
+        // Get time slots if enabled
+        $time_slots = array();
+        if ($enable_time_slots) {
+            $slots = $database->get_active_time_slots();
+            foreach ($slots as $slot) {
+                $time_slots[] = array(
+                    'id' => $slot->id,
+                    'start_time' => $slot->start_time,
+                    'end_time' => $slot->end_time,
+                    'slot_name' => $slot->slot_name ?: (date('H:i', strtotime($slot->start_time)) . '-' . date('H:i', strtotime($slot->end_time))),
+                    'max_bookings' => $slot->max_bookings
+                );
+            }
+        }
         
         ob_start();
         ?>
@@ -203,6 +235,23 @@ class EasyBookinger_Shortcode {
                             </div>
                         </div>
                         
+                        <?php if ($enable_time_slots && !empty($time_slots)): ?>
+                        <div class="eb-form-section">
+                            <h4><?php _e('時間帯選択', EASY_BOOKINGER_TEXT_DOMAIN); ?></h4>
+                            <div class="eb-time-slots">
+                                <?php foreach ($time_slots as $slot): ?>
+                                <label class="eb-time-slot-option">
+                                    <input type="radio" name="booking_time_slot" value="<?php echo esc_attr($slot['id']); ?>">
+                                    <span class="eb-time-slot-label">
+                                        <?php echo esc_html($slot['slot_name']); ?>
+                                        <small class="eb-time-slot-info">(最大<?php echo esc_html($slot['max_bookings']); ?>名)</small>
+                                    </span>
+                                </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
                         <div class="eb-form-section">
                             <h4><?php _e('お客様情報', EASY_BOOKINGER_TEXT_DOMAIN); ?></h4>
                             <?php
@@ -229,18 +278,13 @@ class EasyBookinger_Shortcode {
                 <div class="eb-modal-content">
                     <div class="eb-modal-header">
                         <h3><?php _e('予約完了', EASY_BOOKINGER_TEXT_DOMAIN); ?></h3>
-                        <button type="button" class="eb-modal-close">&times;</button>
                     </div>
                     
                     <div id="eb-success-content" class="eb-success-content">
                         <!-- Success content will be populated by JavaScript -->
                     </div>
                     
-                    <div class="eb-form-actions">
-                        <button type="button" class="eb-button eb-primary eb-modal-close">
-                            <?php _e('閉じる', EASY_BOOKINGER_TEXT_DOMAIN); ?>
-                        </button>
-                    </div>
+                    <!-- Removed the close button as per requirement #5 -->
                 </div>
             </div>
         </div>
@@ -253,6 +297,10 @@ class EasyBookinger_Shortcode {
                         maxSelectableDays: <?php echo (int)$max_selectable_days; ?>,
                         allowedDays: <?php echo json_encode(array_map('intval', $allowed_days)); ?>,
                         bookedDates: <?php echo json_encode($booked_dates); ?>,
+                        restrictedDates: <?php echo json_encode($restricted_dates_array); ?>,
+                        quotasData: <?php echo json_encode($quotas_data); ?>,
+                        enableTimeSlots: <?php echo json_encode($enable_time_slots); ?>,
+                        timeSlots: <?php echo json_encode($time_slots); ?>,
                         bookingFields: <?php echo json_encode($booking_fields); ?>
                     });
                 }

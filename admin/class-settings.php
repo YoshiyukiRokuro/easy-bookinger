@@ -92,6 +92,26 @@ class EasyBookinger_Settings {
                             </label>
                         </td>
                     </tr>
+                    
+                    <tr>
+                        <th scope="row"><?php _e('デフォルト予約枠数', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                        <td>
+                            <input type="number" name="default_daily_quota" value="<?php echo esc_attr($settings['default_daily_quota'] ?? 3); ?>" min="1" max="20" />
+                            <span><?php _e('件/日', EASY_BOOKINGER_TEXT_DOMAIN); ?></span>
+                            <p class="description"><?php _e('個別に設定されていない日の予約枠数（デフォルト値）', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row"><?php _e('時間帯選択機能', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="enable_time_slots" value="1" <?php checked($settings['enable_time_slots'] ?? false); ?> />
+                                <?php _e('時間帯選択機能を有効にする', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                            </label>
+                            <p class="description"><?php _e('有効にすると、予約フォームで時間帯を選択できるようになります。時間帯は「時間帯設定」ページで管理できます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                        </td>
+                    </tr>
                 </table>
                 
                 <h2><?php _e('フォーム設定', EASY_BOOKINGER_TEXT_DOMAIN); ?></h2>
@@ -241,6 +261,8 @@ class EasyBookinger_Settings {
             'pdf_expiry_days' => intval($_POST['pdf_expiry_days']),
             'admin_email_enabled' => isset($_POST['admin_email_enabled']),
             'user_email_enabled' => isset($_POST['user_email_enabled']),
+            'default_daily_quota' => intval($_POST['default_daily_quota']),
+            'enable_time_slots' => isset($_POST['enable_time_slots']),
             'booking_fields' => array()
         );
         

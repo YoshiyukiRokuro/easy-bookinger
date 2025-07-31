@@ -168,6 +168,8 @@ final class EasyBookinger {
             'display_months' => 3,
             'max_selectable_days' => 5,
             'allowed_days' => array(1, 2, 3, 4, 5), // Monday to Friday
+            'default_daily_quota' => 3, // Default daily booking quota
+            'enable_time_slots' => false, // Enable time slot functionality
             'booking_fields' => array(
                 array(
                     'name' => 'user_name',
@@ -201,6 +203,77 @@ final class EasyBookinger {
         );
         
         add_option('easy_bookinger_settings', $default_settings);
+        
+        // Add default time slots if enabled
+        $this->add_default_time_slots();
+    }
+    
+    /**
+     * Add default time slots
+     */
+    private function add_default_time_slots() {
+        // Load database class if not already loaded
+        if (!class_exists('EasyBookinger_Database')) {
+            require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-database.php';
+        }
+        
+        $database = EasyBookinger_Database::instance();
+        $existing_slots = $database->get_time_slots();
+        
+        // Only add default slots if none exist
+        if (empty($existing_slots)) {
+            $default_slots = EasyBookinger_Database::get_default_time_slots();
+            
+            foreach ($default_slots as $slot) {
+                $database->add_time_slot(
+                    $slot['start_time'],
+                    $slot['end_time'], 
+                    $slot['slot_name'],
+                    $slot['max_bookings']
+                );
+            }
+        }
+        
+        // Add common Japanese holidays for current year
+        $this->add_default_holidays();
+    }
+    
+    /**
+     * Add default holidays for the current year
+     */
+    private function add_default_holidays() {
+        $database = EasyBookinger_Database::instance();
+        $current_year = date('Y');
+        
+        // Common Japanese holidays (basic list)
+        $holidays = array(
+            $current_year . '-01-01' => '元日',
+            $current_year . '-01-08' => '成人の日（第2月曜日）',
+            $current_year . '-02-11' => '建国記念の日',
+            $current_year . '-02-23' => '天皇誕生日',
+            $current_year . '-03-20' => '春分の日',
+            $current_year . '-04-29' => '昭和の日',
+            $current_year . '-05-03' => '憲法記念日',
+            $current_year . '-05-04' => 'みどりの日',
+            $current_year . '-05-05' => 'こどもの日',
+            $current_year . '-07-15' => '海の日（第3月曜日）',
+            $current_year . '-08-11' => '山の日',
+            $current_year . '-09-16' => '敬老の日（第3月曜日）',
+            $current_year . '-09-23' => '秋分の日',
+            $current_year . '-10-14' => 'スポーツの日（第2月曜日）',
+            $current_year . '-11-03' => '文化の日',
+            $current_year . '-11-23' => '勤労感謝の日',
+            $current_year . '-12-29' => '年末',
+            $current_year . '-12-30' => '年末',
+            $current_year . '-12-31' => '大晦日'
+        );
+        
+        foreach ($holidays as $date => $reason) {
+            // Check if holiday already exists
+            if (!$database->is_date_restricted($date)) {
+                $database->add_date_restriction($date, 'holiday', $reason);
+            }
+        }
     }
 }
 
