@@ -151,7 +151,27 @@ class EasyBookinger_PDF {
                     <?php if (!empty($booking->booking_time)): ?>
                     <tr>
                         <th>時間</th>
-                        <td><?php echo esc_html($booking->booking_time); ?></td>
+                        <td>
+                            <?php 
+                            // If booking_time is a time slot ID, get the time slot name
+                            if (is_numeric($booking->booking_time)) {
+                                global $wpdb;
+                                $slots_table = $wpdb->prefix . 'easy_bookinger_time_slots';
+                                $time_slot = $wpdb->get_row($wpdb->prepare(
+                                    "SELECT * FROM $slots_table WHERE id = %d",
+                                    $booking->booking_time
+                                ));
+                                
+                                if ($time_slot) {
+                                    echo esc_html($time_slot->slot_name ?: (date('H:i', strtotime($time_slot->start_time)) . '-' . date('H:i', strtotime($time_slot->end_time))));
+                                } else {
+                                    echo esc_html($booking->booking_time);
+                                }
+                            } else {
+                                echo esc_html($booking->booking_time);
+                            }
+                            ?>
+                        </td>
                     </tr>
                     <?php endif; ?>
                     <tr>

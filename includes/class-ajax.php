@@ -103,11 +103,12 @@ class EasyBookinger_Ajax {
         $booking_ids = array();
         $pdf_token = wp_generate_password(32, false);
         $pdf_password = wp_generate_password(12, false);
+        $time_slot_id = isset($form_data['booking_time_slot']) ? (int)$form_data['booking_time_slot'] : null;
         
         foreach ($booking_dates as $date) {
             $booking_data = array(
                 'booking_date' => $date,
-                'booking_time' => sanitize_text_field($form_data['booking_time'] ?? ''),
+                'booking_time' => $time_slot_id ? (string)$time_slot_id : '',
                 'user_name' => sanitize_text_field($form_data['user_name']),
                 'email' => sanitize_email($form_data['email']),
                 'phone' => sanitize_text_field($form_data['phone'] ?? ''),
