@@ -135,8 +135,15 @@ final class EasyBookinger {
      * Plugin activation
      */
     public function activate() {
+        // Load database class if not already loaded
+        if (!class_exists('EasyBookinger_Database')) {
+            require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-database.php';
+        }
+        
         // Create database tables
-        EasyBookinger_Database::create_tables();
+        if (class_exists('EasyBookinger_Database')) {
+            EasyBookinger_Database::create_tables();
+        }
         
         // Add default settings
         $this->add_default_settings();
