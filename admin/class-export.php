@@ -26,6 +26,14 @@ class EasyBookinger_Export {
             echo '</div>';
         }
         
+        // Show error message if redirected after export error
+        if (isset($_GET['export_error']) && $_GET['export_error'] === '1') {
+            $error_message = isset($_GET['error_message']) ? urldecode(sanitize_text_field($_GET['error_message'])) : __('エクスポート中にエラーが発生しました', EASY_BOOKINGER_TEXT_DOMAIN);
+            echo '<div class="notice notice-error is-dismissible">';
+            echo '<p><strong>' . esc_html($error_message) . '</strong></p>';
+            echo '</div>';
+        }
+        
         // Handle file deletion
         if (isset($_POST['action']) && $_POST['action'] === 'delete_file') {
             $this->handle_file_deletion();
@@ -180,10 +188,16 @@ class EasyBookinger_Export {
             if (ob_get_level()) {
                 ob_end_clean();
             }
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-error is-dismissible"><p>' . __('エクスポートするデータが0件です。データが登録されていることを確認してください。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
-            });
-            return;
+            
+            // Redirect back to export page with error message
+            $redirect_url = add_query_arg(array(
+                'page' => 'easy-bookinger-export',
+                'export_error' => '1',
+                'error_message' => urlencode(__('エクスポートするデータが0件です。データが登録されていることを確認してください。', EASY_BOOKINGER_TEXT_DOMAIN))
+            ), admin_url('admin.php'));
+            
+            wp_redirect($redirect_url);
+            exit;
         }
         
         // Get custom filename or use default with WordPress locale time

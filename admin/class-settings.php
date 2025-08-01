@@ -14,13 +14,18 @@ class EasyBookinger_Settings {
      * Render settings page
      */
     public function render_settings_page() {
+        // Display success message if settings were saved
+        if (isset($_GET['settings_saved']) && $_GET['settings_saved'] === '1') {
+            echo '<div class="notice notice-success is-dismissible"><p>' . __('設定を保存しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+        }
+        
         if (isset($_POST['submit'])) {
             $this->save_settings();
         }
         
         $settings = get_option('easy_bookinger_settings', array());
         ?>
-        <div class="wrap">
+        <div class="wrap easy-bookinger-settings">
             <h1><?php _e('Easy Bookinger - 設定', EASY_BOOKINGER_TEXT_DOMAIN); ?></h1>
             
             <form method="post" action="">
@@ -433,9 +438,14 @@ class EasyBookinger_Settings {
         
         update_option('easy_bookinger_settings', $settings);
         
-        add_action('admin_notices', function() {
-            echo '<div class="notice notice-success is-dismissible"><p>' . __('設定を保存しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
-        });
+        // Redirect to prevent resubmission and show success message
+        $redirect_url = add_query_arg(array(
+            'page' => 'easy-bookinger-settings',
+            'settings_saved' => '1'
+        ), admin_url('admin.php'));
+        
+        wp_redirect($redirect_url);
+        exit;
     }
     
     /**

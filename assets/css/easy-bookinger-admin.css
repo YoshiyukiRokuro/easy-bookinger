@@ -346,6 +346,48 @@
     margin: 20px 0;
 }
 
+/* Settings form layout improvements - make form narrower and more vertical */
+.wrap.easy-bookinger-settings .form-table {
+    max-width: 800px;
+}
+
+.wrap.easy-bookinger-settings .form-table th {
+    width: 200px;
+    vertical-align: top;
+    padding-top: 15px;
+}
+
+.wrap.easy-bookinger-settings .form-table td {
+    padding-left: 20px;
+}
+
+.wrap.easy-bookinger-settings input[type="text"],
+.wrap.easy-bookinger-settings input[type="email"],
+.wrap.easy-bookinger-settings input[type="number"],
+.wrap.easy-bookinger-settings select,
+.wrap.easy-bookinger-settings textarea {
+    max-width: 400px;
+    width: 100%;
+}
+
+.wrap.easy-bookinger-settings .booking-field-row {
+    max-width: 780px;
+}
+
+.wrap.easy-bookinger-settings .booking-field-row .form-table {
+    margin: 0;
+}
+
+.wrap.easy-bookinger-settings .booking-field-row .form-table th {
+    width: 120px;
+    font-size: 13px;
+}
+
+.wrap.easy-bookinger-settings .booking-field-row input,
+.wrap.easy-bookinger-settings .booking-field-row select {
+    max-width: 300px;
+}
+
 .wp-list-table .column-id {
     width: 60px;
 }

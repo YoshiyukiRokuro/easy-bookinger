@@ -65,7 +65,11 @@
                 if (self.selectedDates.length > 0) {
                     self.showBookingForm();
                 } else {
-                    toastr.warning(easyBookinger.text.selectDate);
+                    if (typeof toastr !== 'undefined' && easyBookinger && easyBookinger.text) {
+                        toastr.warning(easyBookinger.text.selectDate);
+                    } else {
+                        alert('予約日を選択してください');
+                    }
                 }
             });
             
@@ -306,7 +310,11 @@
             } else {
                 // Check maximum selection limit
                 if (this.selectedDates.length >= this.settings.maxSelectableDays) {
-                    toastr.warning(easyBookinger.text.maxDaysExceeded);
+                    if (typeof toastr !== 'undefined' && easyBookinger && easyBookinger.text) {
+                        toastr.warning(easyBookinger.text.maxDaysExceeded);
+                    } else {
+                        alert('最大選択可能日数を超えています');
+                    }
                     return;
                 }
                 
@@ -446,7 +454,8 @@
             // Show selected dates
             html += '<div class="eb-confirm-section">';
             html += '<strong>予約日程:</strong><br>';
-            this.selectedDates.forEach(function(date) {
+            this.selectedDates.forEach(function(dateStr) {
+                var date = new Date(dateStr);
                 html += '<span class="eb-confirm-date">' + self.formatDateDisplay(date) + '</span><br>';
             });
             html += '</div>';
@@ -524,7 +533,11 @@
                 },
                 error: function() {
                     self.hideLoading();
-                    toastr.error(easyBookinger.text.bookingError);
+                    if (typeof toastr !== 'undefined' && easyBookinger && easyBookinger.text) {
+                        toastr.error(easyBookinger.text.bookingError);
+                    } else {
+                        alert('予約処理中にエラーが発生しました');
+                    }
                 }
             });
         },
