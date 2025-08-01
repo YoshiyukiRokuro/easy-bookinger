@@ -250,10 +250,10 @@ class EasyBookinger_Shortcode {
                         
                         <?php if ($enable_time_slots && !empty($time_slots)): ?>
                         <div class="eb-form-section">
-                            <h4><?php _e('時間帯選択', EASY_BOOKINGER_TEXT_DOMAIN); ?> <span class="eb-required">*</span></h4>
+                            <h4><?php _e('希望時間帯選択', EASY_BOOKINGER_TEXT_DOMAIN); ?> <span class="eb-required">*</span></h4>
                             <div class="eb-time-slots">
                                 <select name="booking_time_slot" class="eb-time-slot-select" required>
-                                    <option value=""><?php _e('時間帯を選択してください', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                    <option value=""><?php _e('希望時間帯を選択してください', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
                                     <?php foreach ($time_slots as $slot): ?>
                                     <option value="<?php echo esc_attr($slot['id']); ?>">
                                         <?php echo esc_html($slot['slot_name']); ?>
