@@ -17,13 +17,18 @@ class EasyBookinger_Settings {
         // Handle form submission BEFORE any output
         if (isset($_POST['submit'])) {
             $this->save_settings();
-            // Exit immediately after save_settings to prevent white page
-            exit;
+            // save_settings() handles its own redirect and exit, so we return here
+            return;
         }
         
         // Display success message if settings were saved
         if (isset($_GET['settings_saved']) && $_GET['settings_saved'] === '1') {
             echo '<div class="notice notice-success is-dismissible"><p>' . __('設定を保存しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+        }
+        
+        // Display error message if settings save failed
+        if (isset($_GET['settings_error']) && $_GET['settings_error'] === '1') {
+            echo '<div class="notice notice-error is-dismissible"><p>' . __('設定の保存中にエラーが発生しました。再度お試しください。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
         }
         
         $settings = get_option('easy_bookinger_settings', array());
@@ -309,7 +314,7 @@ class EasyBookinger_Settings {
                     </tr>
                 </table>
                 
-                <?php submit_button(); ?>
+                <?php submit_button(__('設定を保存', EASY_BOOKINGER_TEXT_DOMAIN), 'primary', 'submit', true); ?>
             </form>
         </div>
         <?php
@@ -319,26 +324,28 @@ class EasyBookinger_Settings {
      * Save settings
      */
     private function save_settings() {
+        // Verify nonce for security
         if (!wp_verify_nonce($_POST['easy_bookinger_settings_nonce'], 'easy_bookinger_settings')) {
             wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
         }
         
-        $settings = array(
-            'display_months' => intval($_POST['display_months']),
-            'max_selectable_days' => intval($_POST['max_selectable_days']),
-            'allowed_days' => array_map('intval', $_POST['allowed_days'] ?? array()),
-            'admin_email_enabled' => isset($_POST['admin_email_enabled']),
-            'user_email_enabled' => isset($_POST['user_email_enabled']),
-            'default_daily_quota' => intval($_POST['default_daily_quota']),
-            'enable_time_slots' => isset($_POST['enable_time_slots']),
-            'allow_same_day_booking' => isset($_POST['allow_same_day_booking']),
-            'timezone' => sanitize_text_field($_POST['timezone'] ?? 'Asia/Tokyo'),
-            'max_future_days' => intval($_POST['max_future_days'] ?? 0),
-            'user_email_subject' => sanitize_text_field($_POST['user_email_subject'] ?? '[{site_name}] 予約確認メール'),
-            'user_email_body' => sanitize_textarea_field($_POST['user_email_body'] ?? $this->get_default_user_email_template()),
-            'booking_success_message' => sanitize_textarea_field($_POST['booking_success_message'] ?? $this->get_default_success_message()),
-            'booking_fields' => array()
-        );
+        try {
+            $settings = array(
+                'display_months' => intval($_POST['display_months']),
+                'max_selectable_days' => intval($_POST['max_selectable_days']),
+                'allowed_days' => array_map('intval', $_POST['allowed_days'] ?? array()),
+                'admin_email_enabled' => isset($_POST['admin_email_enabled']),
+                'user_email_enabled' => isset($_POST['user_email_enabled']),
+                'default_daily_quota' => intval($_POST['default_daily_quota']),
+                'enable_time_slots' => isset($_POST['enable_time_slots']),
+                'allow_same_day_booking' => isset($_POST['allow_same_day_booking']),
+                'timezone' => sanitize_text_field($_POST['timezone'] ?? 'Asia/Tokyo'),
+                'max_future_days' => intval($_POST['max_future_days'] ?? 0),
+                'user_email_subject' => sanitize_text_field($_POST['user_email_subject'] ?? '[{site_name}] 予約確認メール'),
+                'user_email_body' => sanitize_textarea_field($_POST['user_email_body'] ?? $this->get_default_user_email_template()),
+                'booking_success_message' => sanitize_textarea_field($_POST['booking_success_message'] ?? $this->get_default_success_message()),
+                'booking_fields' => array()
+            );
         
         // Process booking fields and ensure email is required
         if (isset($_POST['booking_fields']) && is_array($_POST['booking_fields'])) {
@@ -439,6 +446,7 @@ class EasyBookinger_Settings {
             }
         }
         
+        // Update settings in database
         update_option('easy_bookinger_settings', $settings);
         
         // Redirect to prevent resubmission and show success message
@@ -449,6 +457,20 @@ class EasyBookinger_Settings {
         
         wp_redirect($redirect_url);
         exit;
+        
+        } catch (Exception $e) {
+            // Log the error for debugging
+            error_log('Easy Bookinger Settings Save Error: ' . $e->getMessage());
+            
+            // Redirect with error message
+            $redirect_url = add_query_arg(array(
+                'page' => 'easy-bookinger-settings',
+                'settings_error' => '1'
+            ), admin_url('admin.php'));
+            
+            wp_redirect($redirect_url);
+            exit;
+        }
     }
     
     /**
