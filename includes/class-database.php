@@ -46,8 +46,8 @@ class EasyBookinger_Database {
             confirmation_token varchar(255) DEFAULT NULL,
             token_expires_at datetime DEFAULT NULL,
             confirmed_at datetime DEFAULT NULL,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+            updated_at timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY booking_date (booking_date),
             KEY email (email),
@@ -62,8 +62,8 @@ class EasyBookinger_Database {
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             setting_key varchar(255) NOT NULL,
             setting_value longtext DEFAULT NULL,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+            updated_at timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY setting_key (setting_key)
         ) $charset_collate;";
@@ -75,7 +75,7 @@ class EasyBookinger_Database {
             restriction_date date NOT NULL,
             restriction_type varchar(20) DEFAULT 'custom',
             reason varchar(255) DEFAULT NULL,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            created_at timestamp DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY restriction_date (restriction_date),
             KEY restriction_type (restriction_type)
@@ -88,8 +88,8 @@ class EasyBookinger_Database {
             quota_date date NOT NULL,
             max_bookings int DEFAULT 3,
             current_bookings int DEFAULT 0,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+            updated_at timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY quota_date (quota_date)
         ) $charset_collate;";
@@ -102,7 +102,7 @@ class EasyBookinger_Database {
             slot_name varchar(50) DEFAULT NULL,
             is_active tinyint(1) DEFAULT 1,
             max_bookings int DEFAULT 1,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            created_at timestamp DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY start_time (start_time),
             KEY is_active (is_active)
@@ -116,8 +116,8 @@ class EasyBookinger_Database {
             is_available tinyint(1) DEFAULT 1,
             reason varchar(255) DEFAULT NULL,
             max_bookings int DEFAULT NULL,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+            updated_at timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY availability_date (availability_date),
             KEY is_available (is_available)
@@ -130,8 +130,8 @@ class EasyBookinger_Database {
             email_address varchar(255) NOT NULL,
             notification_types longtext DEFAULT NULL,
             is_active tinyint(1) DEFAULT 1,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+            updated_at timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY email_address (email_address),
             KEY is_active (is_active)
@@ -177,6 +177,75 @@ class EasyBookinger_Database {
         
         // Update existing bookings to confirmed status if they have 'active' status
         $wpdb->query("UPDATE `{$bookings_table}` SET `status` = 'confirmed', `confirmed_at` = `created_at` WHERE `status` = 'active'");
+        
+        // Convert datetime columns to timestamp for MariaDB 5.5 compatibility
+        self::convert_datetime_columns_to_timestamp();
+    }
+    
+    /**
+     * Convert datetime created_at/updated_at columns to timestamp for MariaDB 5.5 compatibility
+     */
+    private static function convert_datetime_columns_to_timestamp() {
+        global $wpdb;
+        
+        // List of tables and their datetime columns that need conversion
+        $tables_to_convert = array(
+            $wpdb->prefix . 'easy_bookinger_bookings' => array('created_at', 'updated_at'),
+            $wpdb->prefix . 'easy_bookinger_settings' => array('created_at', 'updated_at'),
+            $wpdb->prefix . 'easy_bookinger_date_restrictions' => array('created_at'),
+            $wpdb->prefix . 'easy_bookinger_booking_quotas' => array('created_at', 'updated_at'),
+            $wpdb->prefix . 'easy_bookinger_time_slots' => array('created_at'),
+            $wpdb->prefix . 'easy_bookinger_special_availability' => array('created_at', 'updated_at'),
+            $wpdb->prefix . 'easy_bookinger_admin_emails' => array('created_at', 'updated_at')
+        );
+        
+        foreach ($tables_to_convert as $table_name => $columns) {
+            // Check if table exists
+            $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+            if (!$table_exists) {
+                continue;
+            }
+            
+            // Get current table structure
+            $table_structure = $wpdb->get_results("DESCRIBE `{$table_name}`", ARRAY_A);
+            $existing_columns = array();
+            foreach ($table_structure as $column_info) {
+                $existing_columns[$column_info['Field']] = $column_info;
+            }
+            
+            foreach ($columns as $column_name) {
+                if (!isset($existing_columns[$column_name])) {
+                    continue;
+                }
+                
+                $column_info = $existing_columns[$column_name];
+                
+                // Skip if already timestamp
+                if (strpos(strtolower($column_info['Type']), 'timestamp') !== false) {
+                    continue;
+                }
+                
+                // Skip if not datetime
+                if (strpos(strtolower($column_info['Type']), 'datetime') === false) {
+                    continue;
+                }
+                
+                // Determine the appropriate conversion based on column name
+                if ($column_name === 'created_at') {
+                    $default_clause = 'DEFAULT CURRENT_TIMESTAMP';
+                } elseif ($column_name === 'updated_at') {
+                    $default_clause = 'DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP';
+                } else {
+                    $default_clause = 'DEFAULT CURRENT_TIMESTAMP';
+                }
+                
+                // Convert the column
+                $null_clause = ($column_info['Null'] === 'YES') ? 'NULL' : 'NOT NULL';
+                $alter_sql = "ALTER TABLE `{$table_name}` MODIFY COLUMN `{$column_name}` timestamp {$null_clause} {$default_clause}";
+                
+                $wpdb->query($alter_sql);
+            }
+        }
     }
     
     /**
