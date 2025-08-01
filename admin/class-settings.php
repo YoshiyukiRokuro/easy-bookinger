@@ -11,51 +11,32 @@ if (!defined('ABSPATH')) {
 class EasyBookinger_Settings {
     
     /**
+     * Handle settings save (called from admin_init)
+     */
+    public function handle_settings_save() {
+        try {
+            $this->save_settings();
+        } catch (Exception $e) {
+            // Log the error for debugging
+            error_log('Easy Bookinger Settings Save Error: ' . $e->getMessage());
+            
+            // Redirect with error message to prevent white screen
+            $redirect_url = add_query_arg(array(
+                'page' => 'easy-bookinger-settings',
+                'settings_error' => '1'
+            ), admin_url('admin.php'));
+            
+            wp_redirect($redirect_url);
+            exit;
+        }
+    }
+    
+    /**
      * Render settings page
      */
     public function render_settings_page() {
-        // Diagnostic: Log the request method and check headers
-        error_log('Easy Bookinger: render_settings_page called with method: ' . $_SERVER['REQUEST_METHOD']);
-        
-        // Start output buffering immediately to prevent header issues
-        if (!headers_sent()) {
-            ob_start();
-            error_log('Easy Bookinger: Started output buffering in render_settings_page');
-        } else {
-            error_log('Easy Bookinger: Headers already sent when render_settings_page started');
-        }
-        
-        // Handle form submission BEFORE any output
-        if (isset($_POST['submit'])) {
-            error_log('Easy Bookinger: Form submission detected, calling save_settings');
-            try {
-                $this->save_settings();
-                // save_settings() handles its own redirect and exit, so we return here
-                return;
-            } catch (Exception $e) {
-                // Clean any output buffer
-                if (ob_get_level()) {
-                    ob_end_clean();
-                }
-                
-                // Log the error for debugging
-                error_log('Easy Bookinger Settings Save Error: ' . $e->getMessage());
-                
-                // Redirect with error message to prevent white screen
-                $redirect_url = add_query_arg(array(
-                    'page' => 'easy-bookinger-settings',
-                    'settings_error' => '1'
-                ), admin_url('admin.php'));
-                
-                wp_redirect($redirect_url);
-                exit;
-            }
-        }
-        
-        // If we get here, we need to display the page, so end output buffering if active
-        if (ob_get_level()) {
-            ob_end_flush();
-        }
+        // No longer need to handle form submission here since it's handled in admin_init
+        // Just render the page
         
         // Display success message if settings were saved
         if (isset($_GET['settings_saved']) && $_GET['settings_saved'] === '1') {
@@ -360,22 +341,13 @@ class EasyBookinger_Settings {
      * Save settings
      */
     private function save_settings() {
-        // Diagnostic: Check for any output before we start
-        $initial_output = ob_get_contents();
-        if ($initial_output !== false && !empty($initial_output)) {
-            error_log("Easy Bookinger: Found output before save_settings: " . substr($initial_output, 0, 100));
-        }
-        
-        // Ensure output buffering is active and clean any existing output
+        // Clean any existing output buffer
         while (ob_get_level()) {
             ob_end_clean();
         }
         
-        if (!headers_sent()) {
-            ob_start();
-        } else {
-            error_log('Easy Bookinger: Headers already sent when save_settings started');
-            throw new Exception('Headers already sent before save_settings');
+        if (headers_sent($file, $line)) {
+            throw new Exception("Headers already sent at $file:$line - cannot redirect");
         }
         
         try {
@@ -520,22 +492,12 @@ class EasyBookinger_Settings {
         // Update settings in database
         $update_result = update_option('easy_bookinger_settings', $settings);
         
-        $this->log_debug('Settings save completed successfully', array('update_result' => $update_result));
-        
-        // Clean any output buffer before redirect
+        // Clean any remaining output buffer before redirect
         while (ob_get_level()) {
             ob_end_clean();
         }
         
-        // Double-check that headers haven't been sent
-        if (headers_sent($file, $line)) {
-            error_log("Easy Bookinger: Headers already sent at $file:$line before redirect");
-            // Still try to redirect using JavaScript as fallback
-            echo '<script>window.location.href = "' . esc_url(admin_url('admin.php?page=easy-bookinger-settings-complete')) . '";</script>';
-            exit;
-        }
-        
-        // Redirect to completion screen instead of back to settings page
+        // Redirect to completion screen
         $redirect_url = add_query_arg(array(
             'page' => 'easy-bookinger-settings-complete'
         ), admin_url('admin.php'));
@@ -550,25 +512,10 @@ class EasyBookinger_Settings {
             }
             
             // Log the error for debugging
-            error_log('Easy Bookinger Settings Save Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-            $this->log_debug('Settings save failed', array('error' => $e->getMessage()));
+            error_log('Easy Bookinger Settings Save Error: ' . $e->getMessage());
             
-            // Check if headers have been sent
-            if (headers_sent($file, $line)) {
-                error_log("Easy Bookinger: Headers already sent at $file:$line before error redirect");
-                // Use JavaScript redirect as fallback
-                echo '<script>window.location.href = "' . esc_url(admin_url('admin.php?page=easy-bookinger-settings&settings_error=1')) . '";</script>';
-                exit;
-            }
-            
-            // Redirect with error message instead of wp_die to prevent white screen
-            $redirect_url = add_query_arg(array(
-                'page' => 'easy-bookinger-settings',
-                'settings_error' => '1'
-            ), admin_url('admin.php'));
-            
-            wp_redirect($redirect_url);
-            exit;
+            // Re-throw to be caught by handle_settings_save
+            throw $e;
         }
     }
     

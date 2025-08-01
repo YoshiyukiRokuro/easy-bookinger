@@ -156,6 +156,15 @@ class EasyBookinger_Admin {
     public function admin_init() {
         // Register settings
         register_setting('easy_bookinger_settings', 'easy_bookinger_settings');
+        
+        // Handle settings form submission early to prevent header issues
+        if (isset($_GET['page']) && $_GET['page'] === 'easy-bookinger-settings' && 
+            isset($_POST['submit']) && !headers_sent()) {
+            
+            // Process settings save immediately
+            $settings_handler = new EasyBookinger_Settings();
+            $settings_handler->handle_settings_save();
+        }
     }
     
     /**
