@@ -58,6 +58,15 @@ class EasyBookinger_Admin {
         );
         
         add_submenu_page(
+            null, // Don't show in menu
+            __('設定完了', EASY_BOOKINGER_TEXT_DOMAIN),
+            __('設定完了', EASY_BOOKINGER_TEXT_DOMAIN),
+            'manage_options',
+            'easy-bookinger-settings-complete',
+            array($this, 'settings_complete_page')
+        );
+        
+        add_submenu_page(
             'easy-bookinger',
             __('エクスポート', EASY_BOOKINGER_TEXT_DOMAIN),
             __('エクスポート', EASY_BOOKINGER_TEXT_DOMAIN),
@@ -308,6 +317,14 @@ class EasyBookinger_Admin {
     public function settings_page() {
         $settings_handler = new EasyBookinger_Settings();
         $settings_handler->render_settings_page();
+    }
+    
+    /**
+     * Settings completion page
+     */
+    public function settings_complete_page() {
+        $settings_handler = new EasyBookinger_Settings();
+        $settings_handler->render_settings_complete_page();
     }
     
     /**
