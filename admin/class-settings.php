@@ -492,10 +492,9 @@ class EasyBookinger_Settings {
             ob_end_clean();
         }
         
-        // Redirect to prevent resubmission and show success message
+        // Redirect to completion screen instead of back to settings page
         $redirect_url = add_query_arg(array(
-            'page' => 'easy-bookinger-settings',
-            'settings_saved' => '1'
+            'page' => 'easy-bookinger-settings-complete'
         ), admin_url('admin.php'));
         
         wp_redirect($redirect_url);
@@ -587,5 +586,54 @@ class EasyBookinger_Settings {
         }
         
         return true;
+    }
+    
+    /**
+     * Render settings completion page
+     */
+    public function render_settings_complete_page() {
+        ?>
+        <div class="wrap easy-bookinger-settings-complete">
+            <h1><?php _e('設定完了', EASY_BOOKINGER_TEXT_DOMAIN); ?></h1>
+            
+            <div class="notice notice-success" style="border-left: 4px solid #46b450; padding: 1em; margin: 2em 0;">
+                <div style="display: flex; align-items: center;">
+                    <span class="dashicons dashicons-yes-alt" style="color: #46b450; font-size: 24px; margin-right: 10px;"></span>
+                    <p style="margin: 0; font-size: 16px; font-weight: 500;">
+                        <?php _e('設定が保存されました', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                    </p>
+                </div>
+            </div>
+            
+            <div style="margin: 2em 0;">
+                <p><?php _e('Easy Bookingerの設定が正常に保存されました。変更内容が適用されています。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+            </div>
+            
+            <div style="margin: 2em 0;">
+                <a href="<?php echo esc_url(admin_url('admin.php?page=easy-bookinger-settings')); ?>" 
+                   class="button button-primary button-large">
+                    <span class="dashicons dashicons-arrow-left-alt" style="margin-right: 5px;"></span>
+                    <?php _e('戻る', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                </a>
+                
+                <a href="<?php echo esc_url(admin_url('admin.php?page=easy-bookinger')); ?>" 
+                   class="button button-secondary" style="margin-left: 10px;">
+                    <?php _e('予約管理画面へ', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                </a>
+            </div>
+        </div>
+        
+        <style>
+        .easy-bookinger-settings-complete .button-large {
+            padding: 10px 20px;
+            height: auto;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+        .easy-bookinger-settings-complete .dashicons {
+            vertical-align: middle;
+        }
+        </style>
+        <?php
     }
 }
