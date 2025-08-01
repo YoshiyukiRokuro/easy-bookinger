@@ -176,6 +176,14 @@ class EasyBookinger_Admin {
         <div class="wrap">
             <h1><?php _e('Easy Bookinger - 予約管理', EASY_BOOKINGER_TEXT_DOMAIN); ?></h1>
             
+            <?php
+            // Display security error message if present
+            if (isset($_GET['security_error']) && $_GET['security_error'] === '1') {
+                $error_message = isset($_GET['error_message']) ? urldecode($_GET['error_message']) : __('セキュリティエラーが発生しました', EASY_BOOKINGER_TEXT_DOMAIN);
+                echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($error_message) . '</p></div>';
+            }
+            ?>
+            
             <div class="eb-admin-header">
                 <h2><?php _e('予約一覧', EASY_BOOKINGER_TEXT_DOMAIN); ?></h2>
                 <p><?php _e('登録された予約の管理を行います。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
@@ -811,11 +819,39 @@ class EasyBookinger_Admin {
     }
     
     /**
+     * Safe error handling to prevent white screens
+     * Use this instead of wp_die() to handle nonce failures gracefully
+     */
+    private function handle_security_error($page = null, $message = null) {
+        if (!$page) {
+            $page = 'easy-bookinger';
+        }
+        
+        if (!$message) {
+            $message = __('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN);
+        }
+        
+        // Log the security error for debugging
+        error_log('Easy Bookinger Security Error: ' . $message . ' on page: ' . $page);
+        
+        // Redirect with error message instead of wp_die to prevent white screen
+        $redirect_url = add_query_arg(array(
+            'page' => $page,
+            'security_error' => '1',
+            'error_message' => urlencode($message)
+        ), admin_url('admin.php'));
+        
+        wp_redirect($redirect_url);
+        exit;
+    }
+    
+    /**
      * Handle date restrictions actions
      */
     private function handle_restrictions_action($post_data) {
         if (!wp_verify_nonce($post_data['eb_restrictions_nonce'], 'eb_restrictions_action')) {
-            wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
+            $this->handle_security_error('easy-bookinger-restrictions');
+            return;
         }
         
         $database = EasyBookinger_Database::instance();
@@ -877,7 +913,8 @@ class EasyBookinger_Admin {
      */
     private function handle_special_availability_action($post_data) {
         if (!wp_verify_nonce($post_data['eb_special_availability_nonce'], 'eb_special_availability_action')) {
-            wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
+            $this->handle_security_error('easy-bookinger-special-availability');
+            return;
         }
         
         $database = EasyBookinger_Database::instance();
@@ -937,7 +974,8 @@ class EasyBookinger_Admin {
      */
     private function handle_quotas_action($post_data) {
         if (!wp_verify_nonce($post_data['eb_quotas_nonce'], 'eb_quotas_action')) {
-            wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
+            $this->handle_security_error('easy-bookinger-quotas');
+            return;
         }
         
         $database = EasyBookinger_Database::instance();
@@ -997,7 +1035,8 @@ class EasyBookinger_Admin {
      */
     private function handle_timeslots_action($post_data) {
         if (!wp_verify_nonce($post_data['eb_timeslots_nonce'], 'eb_timeslots_action')) {
-            wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
+            $this->handle_security_error('easy-bookinger-timeslots');
+            return;
         }
         
         $database = EasyBookinger_Database::instance();
