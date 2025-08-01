@@ -183,22 +183,7 @@ class EasyBookinger_Export {
         
         $bookings = $database->get_bookings($args);
         
-        if (empty($bookings)) {
-            // Clean output buffer before adding admin notice
-            if (ob_get_level()) {
-                ob_end_clean();
-            }
-            
-            // Redirect back to export page with error message
-            $redirect_url = add_query_arg(array(
-                'page' => 'easy-bookinger-export',
-                'export_error' => '1',
-                'error_message' => urlencode(__('エクスポートするデータが0件です。データが登録されていることを確認してください。', EASY_BOOKINGER_TEXT_DOMAIN))
-            ), admin_url('admin.php'));
-            
-            wp_redirect($redirect_url);
-            exit;
-        }
+        // Note: Create CSV with headers even if no bookings exist (per issue requirement)
         
         // Get custom filename or use default with WordPress locale time
         $timezone = get_option('timezone_string') ?: 'Asia/Tokyo';

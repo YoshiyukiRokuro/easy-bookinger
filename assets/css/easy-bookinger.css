@@ -307,6 +307,8 @@
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
+    margin: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .eb-modal-header {
@@ -902,49 +904,115 @@
     .eb-booking-dates {
         font-size: 14px;
     }
+    
+    /* Responsive confirmation modal */
+    .eb-confirmation-content {
+        padding: 15px;
+    }
+    
+    .eb-confirm-section {
+        margin: 12px 0;
+        padding: 12px;
+    }
+    
+    .eb-confirm-field {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .eb-field-label {
+        margin-right: 0;
+        margin-bottom: 4px;
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .eb-modal-actions {
+        padding: 15px;
+        flex-direction: column;
+    }
+    
+    .eb-modal-actions .eb-button {
+        width: 100%;
+        margin: 5px 0;
+    }
 }
 
 /* Confirmation Modal */
+.eb-confirmation-content {
+    padding: 20px;
+    line-height: 1.6;
+}
+
 .eb-confirmation-summary {
     line-height: 1.6;
 }
 
 .eb-confirm-section {
     margin: 15px 0;
-    padding: 10px;
+    padding: 15px;
     border-left: 3px solid #007cba;
     background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.eb-confirm-section h5 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.eb-confirm-dates {
+    margin: 10px 0;
 }
 
 .eb-confirm-date {
     display: inline-block;
-    padding: 2px 8px;
-    margin: 2px;
+    padding: 4px 12px;
+    margin: 4px 8px 4px 0;
     background-color: #007cba;
     color: white;
-    border-radius: 3px;
+    border-radius: 4px;
     font-size: 14px;
+    font-weight: 500;
 }
 
 .eb-confirm-field {
-    margin: 5px 0;
-    padding: 3px 0;
+    margin: 8px 0;
+    padding: 4px 0;
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
 }
 
 .eb-field-label {
-    font-weight: bold;
-    margin-right: 8px;
+    font-weight: 600;
+    margin-right: 12px;
+    color: #555;
+    min-width: 100px;
+    flex-shrink: 0;
 }
 
 .eb-field-value {
     color: #333;
+    flex: 1;
+    word-break: break-word;
 }
 
 .eb-modal-actions {
+    padding: 20px;
+    background: #f8f9fa;
     margin-top: 20px;
     text-align: right;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .eb-modal-actions .eb-button {
-    margin-left: 10px;
+    margin: 0;
+    min-width: 100px;
 }
