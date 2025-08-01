@@ -55,8 +55,16 @@ class EasyBookinger_File_Manager {
     public static function save_file($content, $filename, $type = 'export') {
         $exports_dir = self::ensure_exports_dir();
         
-        // Create unique filename with timestamp and type
-        $timestamp = date('Y-m-d_H-i-s');
+        // Create unique filename with timestamp and type using WordPress timezone
+        $timezone = get_option('timezone_string') ?: 'Asia/Tokyo';
+        try {
+            $current_time = new DateTime('now', new DateTimeZone($timezone));
+            $timestamp = $current_time->format('Y-m-d_H-i-s');
+        } catch (Exception $e) {
+            // Fallback to server time if timezone conversion fails
+            $timestamp = date('Y-m-d_H-i-s');
+        }
+        
         $unique_filename = $timestamp . '_' . $type . '_' . $filename;
         $file_path = $exports_dir . '/' . $unique_filename;
         
@@ -91,11 +99,21 @@ class EasyBookinger_File_Manager {
     private static function store_file_info($filename, $file_path, $type, $size) {
         $files = get_option('easy_bookinger_stored_files', array());
         
+        // Use WordPress timezone for file creation time (instead of server time)
+        $timezone = get_option('timezone_string') ?: 'Asia/Tokyo';
+        try {
+            $current_time = new DateTime('now', new DateTimeZone($timezone));
+            $created_timestamp = $current_time->getTimestamp();
+        } catch (Exception $e) {
+            // Fallback to server time if timezone conversion fails
+            $created_timestamp = time();
+        }
+        
         $files[$filename] = array(
             'path' => $file_path,
             'type' => $type,
             'size' => $size,
-            'created' => time(),
+            'created' => $created_timestamp,
             'expires' => 0 // No expiration
         );
         
@@ -317,7 +335,18 @@ class EasyBookinger_File_Manager {
                         ?>
                     </td>
                     <td><?php echo esc_html(size_format($info['size'])); ?></td>
-                    <td><?php echo esc_html(date('Y/m/d H:i', $info['created'])); ?></td>
+                    <td><?php 
+                        // Display creation time in WordPress timezone
+                        $timezone = get_option('timezone_string') ?: 'Asia/Tokyo';
+                        try {
+                            $created_date = new DateTime('@' . $info['created']);
+                            $created_date->setTimezone(new DateTimeZone($timezone));
+                            echo esc_html($created_date->format('Y/m/d H:i'));
+                        } catch (Exception $e) {
+                            // Fallback to original timestamp display
+                            echo esc_html(date('Y/m/d H:i', $info['created']));
+                        }
+                    ?></td>
                     <?php if ($show_actions): ?>
                     <td>
                         <a href="<?php echo esc_url(self::get_download_url($filename)); ?>" 

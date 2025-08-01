@@ -43,7 +43,18 @@ class EasyBookinger_Backup {
                         <tr>
                             <th scope="row"><?php _e('ファイル名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             <td>
-                                <input type="text" name="backup_filename" value="<?php echo esc_attr('easy_bookinger_backup_' . date('Y-m-d')); ?>" style="width: 300px;" />
+                                <?php 
+                                // Use WordPress timezone for default filename
+                                $timezone = get_option('timezone_string') ?: 'Asia/Tokyo';
+                                try {
+                                    $current_time = new DateTime('now', new DateTimeZone($timezone));
+                                    $default_filename = 'easy_bookinger_backup_' . $current_time->format('Y-m-d');
+                                } catch (Exception $e) {
+                                    // Fallback to server time
+                                    $default_filename = 'easy_bookinger_backup_' . date('Y-m-d');
+                                }
+                                ?>
+                                <input type="text" name="backup_filename" value="<?php echo esc_attr($default_filename); ?>" style="width: 300px;" />
                                 <p class="description"><?php _e('バックアップファイルの名前を指定してください（拡張子は自動で付きます）', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
                             </td>
                         </tr>
@@ -188,7 +199,7 @@ class EasyBookinger_Backup {
         $backup_data = array(
             'plugin' => 'easy-bookinger',
             'version' => EASY_BOOKINGER_VERSION,
-            'created_at' => current_time('mysql'),
+            'created_at' => current_time('mysql'), // Uses WordPress timezone
             'site_url' => get_site_url(),
             'data' => array()
         );
