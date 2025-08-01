@@ -16,9 +16,23 @@ class EasyBookinger_Settings {
     public function render_settings_page() {
         // Handle form submission BEFORE any output
         if (isset($_POST['submit'])) {
-            $this->save_settings();
-            // save_settings() handles its own redirect and exit, so we return here
-            return;
+            try {
+                $this->save_settings();
+                // save_settings() handles its own redirect and exit, so we return here
+                return;
+            } catch (Exception $e) {
+                // Log the error for debugging
+                error_log('Easy Bookinger Settings Save Error: ' . $e->getMessage());
+                
+                // Redirect with error message to prevent white screen
+                $redirect_url = add_query_arg(array(
+                    'page' => 'easy-bookinger-settings',
+                    'settings_error' => '1'
+                ), admin_url('admin.php'));
+                
+                wp_redirect($redirect_url);
+                exit;
+            }
         }
         
         // Display success message if settings were saved
@@ -324,60 +338,78 @@ class EasyBookinger_Settings {
      * Save settings
      */
     private function save_settings() {
-        // Verify nonce for security
-        if (!wp_verify_nonce($_POST['easy_bookinger_settings_nonce'], 'easy_bookinger_settings')) {
-            wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
+        // Start output buffering to prevent any accidental output before redirect
+        if (!headers_sent()) {
+            ob_start();
         }
         
         try {
+            // Validate POST data structure first
+            $this->validate_post_data();
+            
+            // Verify nonce for security
+            if (!wp_verify_nonce($_POST['easy_bookinger_settings_nonce'], 'easy_bookinger_settings')) {
+                throw new Exception('Nonce verification failed');
+            }
+            
+            $this->log_debug('Starting settings save process');
+            
+            // Validate and sanitize form data with proper array checking
             $settings = array(
-                'display_months' => intval($_POST['display_months']),
-                'max_selectable_days' => intval($_POST['max_selectable_days']),
-                'allowed_days' => array_map('intval', $_POST['allowed_days'] ?? array()),
+                'display_months' => isset($_POST['display_months']) ? intval($_POST['display_months']) : 3,
+                'max_selectable_days' => isset($_POST['max_selectable_days']) ? intval($_POST['max_selectable_days']) : 5,
+                'allowed_days' => isset($_POST['allowed_days']) && is_array($_POST['allowed_days']) ? 
+                                 array_map('intval', $_POST['allowed_days']) : array(1, 2, 3, 4, 5),
                 'admin_email_enabled' => isset($_POST['admin_email_enabled']),
                 'user_email_enabled' => isset($_POST['user_email_enabled']),
-                'default_daily_quota' => intval($_POST['default_daily_quota']),
+                'default_daily_quota' => isset($_POST['default_daily_quota']) ? intval($_POST['default_daily_quota']) : 3,
                 'enable_time_slots' => isset($_POST['enable_time_slots']),
                 'allow_same_day_booking' => isset($_POST['allow_same_day_booking']),
-                'timezone' => sanitize_text_field($_POST['timezone'] ?? 'Asia/Tokyo'),
-                'max_future_days' => intval($_POST['max_future_days'] ?? 0),
-                'user_email_subject' => sanitize_text_field($_POST['user_email_subject'] ?? '[{site_name}] 予約確認メール'),
-                'user_email_body' => sanitize_textarea_field($_POST['user_email_body'] ?? $this->get_default_user_email_template()),
-                'booking_success_message' => sanitize_textarea_field($_POST['booking_success_message'] ?? $this->get_default_success_message()),
+                'timezone' => isset($_POST['timezone']) ? sanitize_text_field($_POST['timezone']) : 'Asia/Tokyo',
+                'max_future_days' => isset($_POST['max_future_days']) ? intval($_POST['max_future_days']) : 0,
+                'user_email_subject' => isset($_POST['user_email_subject']) ? 
+                                       sanitize_text_field($_POST['user_email_subject']) : '[{site_name}] 予約確認メール',
+                'user_email_body' => isset($_POST['user_email_body']) ? 
+                                    sanitize_textarea_field($_POST['user_email_body']) : $this->get_default_user_email_template(),
+                'booking_success_message' => isset($_POST['booking_success_message']) ? 
+                                            sanitize_textarea_field($_POST['booking_success_message']) : $this->get_default_success_message(),
                 'booking_fields' => array()
             );
         
-        // Process booking fields and ensure email is required
+        // Process booking fields and ensure email is required with proper validation
         if (isset($_POST['booking_fields']) && is_array($_POST['booking_fields'])) {
             $has_email = false;
             $has_email_confirm = false;
             
             foreach ($_POST['booking_fields'] as $field) {
-                if (!empty($field['name']) && !empty($field['label'])) {
-                    $field_data = array(
-                        'name' => sanitize_text_field($field['name']),
-                        'label' => sanitize_text_field($field['label']),
-                        'type' => sanitize_text_field($field['type']),
-                        'required' => isset($field['required']),
-                        'maxlength' => !empty($field['maxlength']) ? intval($field['maxlength']) : 0
-                    );
-                    
-                    // Make email fields required by force and set max length to 256
-                    if ($field['type'] === 'email' || $field['name'] === 'email' || $field['name'] === 'email_confirm') {
-                        $field_data['required'] = true;
-                        $field_data['maxlength'] = 256;
-                    }
-                    
-                    // Track if we have email fields
-                    if ($field['name'] === 'email') {
-                        $has_email = true;
-                    }
-                    if ($field['name'] === 'email_confirm') {
-                        $has_email_confirm = true;
-                    }
-                    
-                    $settings['booking_fields'][] = $field_data;
+                // Validate that field is an array and has required keys
+                if (!is_array($field) || empty($field['name']) || empty($field['label'])) {
+                    continue;
                 }
+                
+                $field_data = array(
+                    'name' => sanitize_text_field($field['name']),
+                    'label' => sanitize_text_field($field['label']),
+                    'type' => isset($field['type']) ? sanitize_text_field($field['type']) : 'text',
+                    'required' => isset($field['required']),
+                    'maxlength' => !empty($field['maxlength']) ? intval($field['maxlength']) : 0
+                );
+                
+                // Make email fields required by force and set max length to 256
+                if ($field_data['type'] === 'email' || $field_data['name'] === 'email' || $field_data['name'] === 'email_confirm') {
+                    $field_data['required'] = true;
+                    $field_data['maxlength'] = 256;
+                }
+                
+                // Track if we have email fields
+                if ($field_data['name'] === 'email') {
+                    $has_email = true;
+                }
+                if ($field_data['name'] === 'email_confirm') {
+                    $has_email_confirm = true;
+                }
+                
+                $settings['booking_fields'][] = $field_data;
             }
             
             // Ensure email and email_confirm fields are always present
@@ -427,14 +459,18 @@ class EasyBookinger_Settings {
             );
         }
         
-        // Save admin emails
+        // Save admin emails with proper validation
         if (isset($_POST['admin_emails']) && is_array($_POST['admin_emails'])) {
             $database = EasyBookinger_Database::instance();
             
             // Clear existing admin emails
             $existing_emails = $database->get_admin_emails();
-            foreach ($existing_emails as $email) {
-                $database->delete_admin_email($email->id);
+            if (is_array($existing_emails)) {
+                foreach ($existing_emails as $email) {
+                    if (isset($email->id)) {
+                        $database->delete_admin_email($email->id);
+                    }
+                }
             }
             
             // Add new admin emails
@@ -447,7 +483,14 @@ class EasyBookinger_Settings {
         }
         
         // Update settings in database
-        update_option('easy_bookinger_settings', $settings);
+        $update_result = update_option('easy_bookinger_settings', $settings);
+        
+        $this->log_debug('Settings save completed successfully', array('update_result' => $update_result));
+        
+        // Clean any output buffer before redirect
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
         
         // Redirect to prevent resubmission and show success message
         $redirect_url = add_query_arg(array(
@@ -459,10 +502,16 @@ class EasyBookinger_Settings {
         exit;
         
         } catch (Exception $e) {
-            // Log the error for debugging
-            error_log('Easy Bookinger Settings Save Error: ' . $e->getMessage());
+            // Clean any output buffer
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
             
-            // Redirect with error message
+            // Log the error for debugging
+            error_log('Easy Bookinger Settings Save Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            $this->log_debug('Settings save failed', array('error' => $e->getMessage()));
+            
+            // Redirect with error message instead of wp_die to prevent white screen
             $redirect_url = add_query_arg(array(
                 'page' => 'easy-bookinger-settings',
                 'settings_error' => '1'
@@ -510,5 +559,33 @@ class EasyBookinger_Settings {
 予約を確定するため、確認メールをお送りいたしました。
 メールに記載されたリンクを1時間以内にクリックして、予約を確定してください。
 ありがとうございました。";
+    }
+    
+    /**
+     * Log debug information for troubleshooting
+     */
+    private function log_debug($message, $data = null) {
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $log_message = 'Easy Bookinger Settings Debug: ' . $message;
+            if ($data !== null) {
+                $log_message .= ' | Data: ' . print_r($data, true);
+            }
+            error_log($log_message);
+        }
+    }
+    
+    /**
+     * Validate POST data structure to prevent errors
+     */
+    private function validate_post_data() {
+        $required_fields = array('easy_bookinger_settings_nonce');
+        
+        foreach ($required_fields as $field) {
+            if (!isset($_POST[$field])) {
+                throw new Exception("Missing required field: $field");
+            }
+        }
+        
+        return true;
     }
 }
