@@ -186,7 +186,7 @@ class EasyBookinger_Database {
         global $wpdb;
         
         $defaults = array(
-            'status' => 'active',
+            'status' => 'confirmed',
             'date_from' => null,
             'date_to' => null,
             'limit' => -1,
@@ -202,8 +202,13 @@ class EasyBookinger_Database {
         $values = array();
         
         if (!empty($args['status'])) {
-            $where_clauses[] = 'status = %s';
-            $values[] = $args['status'];
+            if ($args['status'] === 'confirmed') {
+                // For confirmed status, include both 'confirmed' and legacy 'active' status
+                $where_clauses[] = "(status = 'confirmed' OR status = 'active')";
+            } else {
+                $where_clauses[] = 'status = %s';
+                $values[] = $args['status'];
+            }
         }
         
         if (!empty($args['date_from'])) {
@@ -266,7 +271,7 @@ class EasyBookinger_Database {
             'phone' => sanitize_text_field($data['phone'] ?? ''),
             'comment' => sanitize_textarea_field($data['comment'] ?? ''),
             'form_data' => maybe_serialize($data['form_data'] ?? array()),
-            'status' => 'active'
+            'status' => sanitize_text_field($data['status'] ?? 'pending')
         );
         
         $result = $wpdb->insert($table, $booking_data);
@@ -426,7 +431,7 @@ class EasyBookinger_Database {
         global $wpdb;
         
         $table = $wpdb->prefix . 'easy_bookinger_bookings';
-        $where_clauses = array("status = 'confirmed'");
+        $where_clauses = array("(status = 'confirmed' OR status = 'active')");
         $values = array();
         
         if ($date_from) {
@@ -618,7 +623,7 @@ class EasyBookinger_Database {
         // Get current bookings count for this date
         $bookings_table = $wpdb->prefix . 'easy_bookinger_bookings';
         $current_bookings = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND status = 'active'",
+            "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND (status = 'confirmed' OR status = 'active')",
             $date
         ));
         
@@ -653,7 +658,7 @@ class EasyBookinger_Database {
         
         // Get current bookings count
         $current_bookings = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND status = 'confirmed'",
+            "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND (status = 'confirmed' OR status = 'active')",
             $date
         ));
         
@@ -675,7 +680,7 @@ class EasyBookinger_Database {
             global $wpdb;
             $bookings_table = $wpdb->prefix . 'easy_bookinger_bookings';
             $current_bookings = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND status = 'confirmed'",
+                "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND (status = 'confirmed' OR status = 'active')",
                 $date
             ));
             
@@ -693,7 +698,7 @@ class EasyBookinger_Database {
             global $wpdb;
             $bookings_table = $wpdb->prefix . 'easy_bookinger_bookings';
             $current_bookings = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND status = 'confirmed'",
+                "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND (status = 'confirmed' OR status = 'active')",
                 $date
             ));
             
