@@ -38,12 +38,12 @@ class EasyBookinger_Database {
             booking_date date NOT NULL,
             booking_time varchar(20) DEFAULT NULL,
             user_name varchar(255) NOT NULL,
-            email varchar(255) NOT NULL,
+            email varchar(191) NOT NULL,
             phone varchar(50) DEFAULT NULL,
             comment text DEFAULT NULL,
             form_data longtext DEFAULT NULL,
             status varchar(20) DEFAULT 'pending',
-            confirmation_token varchar(255) DEFAULT NULL,
+            confirmation_token varchar(191) DEFAULT NULL,
             token_expires_at datetime DEFAULT NULL,
             confirmed_at datetime DEFAULT NULL,
             created_at timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -60,7 +60,7 @@ class EasyBookinger_Database {
         $settings_table = $wpdb->prefix . 'easy_bookinger_settings';
         $sql_settings = "CREATE TABLE $settings_table (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
-            setting_key varchar(255) NOT NULL,
+            setting_key varchar(191) NOT NULL,
             setting_value longtext DEFAULT NULL,
             created_at timestamp DEFAULT CURRENT_TIMESTAMP,
             updated_at timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -127,7 +127,7 @@ class EasyBookinger_Database {
         $admin_emails_table = $wpdb->prefix . 'easy_bookinger_admin_emails';
         $sql_admin_emails = "CREATE TABLE $admin_emails_table (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
-            email_address varchar(255) NOT NULL,
+            email_address varchar(191) NOT NULL,
             notification_types longtext DEFAULT NULL,
             is_active tinyint(1) DEFAULT 1,
             created_at timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -162,7 +162,7 @@ class EasyBookinger_Database {
         $columns = $wpdb->get_col("DESC `{$bookings_table}`", 0);
         
         if (!in_array('confirmation_token', $columns)) {
-            $wpdb->query("ALTER TABLE `{$bookings_table}` ADD COLUMN `confirmation_token` varchar(255) DEFAULT NULL");
+            $wpdb->query("ALTER TABLE `{$bookings_table}` ADD COLUMN `confirmation_token` varchar(191) DEFAULT NULL");
             $wpdb->query("ALTER TABLE `{$bookings_table}` ADD INDEX `confirmation_token` (`confirmation_token`)");
         }
         
@@ -178,8 +178,82 @@ class EasyBookinger_Database {
         // Update existing bookings to confirmed status if they have 'active' status
         $wpdb->query("UPDATE `{$bookings_table}` SET `status` = 'confirmed', `confirmed_at` = `created_at` WHERE `status` = 'active'");
         
+        // Fix key length issues for utf8mb4 compatibility
+        self::fix_key_length_issues();
+        
         // Convert datetime columns to timestamp for MariaDB 5.5 compatibility
         self::convert_datetime_columns_to_timestamp();
+    }
+    
+    /**
+     * Fix key length issues for utf8mb4 compatibility
+     */
+    private static function fix_key_length_issues() {
+        global $wpdb;
+        
+        // Tables and their problematic columns that need to be shortened
+        $tables_to_fix = array(
+            $wpdb->prefix . 'easy_bookinger_bookings' => array(
+                'email' => 'varchar(191)',
+                'confirmation_token' => 'varchar(191)'
+            ),
+            $wpdb->prefix . 'easy_bookinger_settings' => array(
+                'setting_key' => 'varchar(191)'
+            ),
+            $wpdb->prefix . 'easy_bookinger_admin_emails' => array(
+                'email_address' => 'varchar(191)'
+            )
+        );
+        
+        foreach ($tables_to_fix as $table_name => $columns) {
+            // Check if table exists
+            $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+            if (!$table_exists) {
+                continue;
+            }
+            
+            // Get current table structure
+            $table_structure = $wpdb->get_results("DESCRIBE `{$table_name}`", ARRAY_A);
+            $existing_columns = array();
+            foreach ($table_structure as $column_info) {
+                $existing_columns[$column_info['Field']] = $column_info;
+            }
+            
+            foreach ($columns as $column_name => $new_type) {
+                if (!isset($existing_columns[$column_name])) {
+                    continue;
+                }
+                
+                $column_info = $existing_columns[$column_name];
+                
+                // Check if column is currently varchar(255) and needs to be shortened
+                if (strpos(strtolower($column_info['Type']), 'varchar(255)') !== false) {
+                    // Drop existing index first if it exists
+                    $wpdb->query("ALTER TABLE `{$table_name}` DROP INDEX `{$column_name}`");
+                    
+                    // Modify column length
+                    $null_clause = ($column_info['Null'] === 'YES') ? 'NULL' : 'NOT NULL';
+                    $default_clause = '';
+                    if ($column_info['Default'] !== null) {
+                        $default_clause = "DEFAULT '" . esc_sql($column_info['Default']) . "'";
+                    } elseif ($column_info['Null'] === 'YES') {
+                        $default_clause = 'DEFAULT NULL';
+                    }
+                    
+                    $alter_sql = "ALTER TABLE `{$table_name}` MODIFY COLUMN `{$column_name}` {$new_type} {$null_clause} {$default_clause}";
+                    $wpdb->query($alter_sql);
+                    
+                    // Re-create the index
+                    if ($column_name === 'setting_key') {
+                        // Unique key for settings table
+                        $wpdb->query("ALTER TABLE `{$table_name}` ADD UNIQUE KEY `{$column_name}` (`{$column_name}`)");
+                    } else {
+                        // Regular key for other tables
+                        $wpdb->query("ALTER TABLE `{$table_name}` ADD KEY `{$column_name}` (`{$column_name}`)");
+                    }
+                }
+            }
+        }
     }
     
     /**
