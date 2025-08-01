@@ -54,6 +54,16 @@
     color: #2e7d32;
 }
 
+.status-confirmed {
+    background: #c8e6c9;
+    color: #2e7d32;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
 .status-inactive {
     background: #ffcdd2;
     color: #c62828;

@@ -62,6 +62,12 @@ final class EasyBookinger {
         // File download handler
         add_action('admin_init', array($this, 'handle_file_downloads'));
         
+        // Booking confirmation handler
+        add_action('init', array($this, 'handle_booking_confirmation'));
+        
+        // Cleanup expired bookings cron job
+        add_action('easy_bookinger_cleanup_expired', array($this, 'cleanup_expired_bookings'));
+        
         // Activation and deactivation hooks
         register_activation_hook(__FILE__, array($this, 'activate'));
         register_deactivation_hook(__FILE__, array($this, 'deactivate'));
@@ -73,6 +79,38 @@ final class EasyBookinger {
     public function handle_file_downloads() {
         if (isset($_GET['action']) && $_GET['action'] === 'easy_bookinger_download_file') {
             EasyBookinger_File_Manager::handle_download();
+        }
+    }
+    
+    /**
+     * Handle booking confirmation
+     */
+    public function handle_booking_confirmation() {
+        if (isset($_GET['action']) && $_GET['action'] === 'easy_bookinger_confirm' && isset($_GET['token'])) {
+            $token = sanitize_text_field($_GET['token']);
+            
+            // Load database class if not already loaded
+            if (!class_exists('EasyBookinger_Database')) {
+                require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-database.php';
+            }
+            
+            $database = EasyBookinger_Database::instance();
+            $confirmed_booking = $database->confirm_booking_by_token($token);
+            
+            if ($confirmed_booking) {
+                // Booking confirmed successfully
+                wp_redirect(add_query_arg(array(
+                    'eb_confirmation' => 'success',
+                    'booking_id' => $confirmed_booking->id
+                ), home_url()));
+                exit;
+            } else {
+                // Confirmation failed (token expired, invalid, etc.)
+                wp_redirect(add_query_arg(array(
+                    'eb_confirmation' => 'failed'
+                ), home_url()));
+                exit;
+            }
         }
     }
     
@@ -161,6 +199,11 @@ final class EasyBookinger {
         // Add default settings
         $this->add_default_settings();
         
+        // Schedule cleanup cron job
+        if (!wp_next_scheduled('easy_bookinger_cleanup_expired')) {
+            wp_schedule_event(time(), 'hourly', 'easy_bookinger_cleanup_expired');
+        }
+        
         // Flush rewrite rules
         flush_rewrite_rules();
     }
@@ -169,6 +212,9 @@ final class EasyBookinger {
      * Plugin deactivation
      */
     public function deactivate() {
+        // Clear scheduled cleanup job
+        wp_clear_scheduled_hook('easy_bookinger_cleanup_expired');
+        
         // Flush rewrite rules
         flush_rewrite_rules();
     }
@@ -286,6 +332,19 @@ final class EasyBookinger {
                 $database->add_date_restriction($date, 'holiday', $reason);
             }
         }
+    }
+    
+    /**
+     * Cleanup expired bookings
+     */
+    public function cleanup_expired_bookings() {
+        // Load database class if not already loaded
+        if (!class_exists('EasyBookinger_Database')) {
+            require_once EASY_BOOKINGER_PLUGIN_DIR . 'includes/class-database.php';
+        }
+        
+        $database = EasyBookinger_Database::instance();
+        $database->cleanup_expired_bookings();
     }
 }
 

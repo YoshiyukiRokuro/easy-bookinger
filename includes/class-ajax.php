@@ -147,12 +147,20 @@ class EasyBookinger_Ajax {
                 'email' => sanitize_email($form_data['email']),
                 'phone' => sanitize_text_field($form_data['phone'] ?? ''),
                 'comment' => sanitize_textarea_field($form_data['comment'] ?? ''),
-                'form_data' => $form_data
+                'form_data' => $form_data,
+                'status' => 'pending'
             );
             
             $booking_id = $database->create_booking($booking_data);
             if ($booking_id) {
-                $booking_ids[] = $booking_id;
+                // Generate confirmation token
+                $token = $database->generate_confirmation_token($booking_id);
+                if ($token) {
+                    $booking_ids[] = array(
+                        'id' => $booking_id,
+                        'token' => $token
+                    );
+                }
             }
         }
         
@@ -176,12 +184,12 @@ class EasyBookinger_Ajax {
         
         // Send admin notification
         if (isset($settings['admin_email_enabled']) && $settings['admin_email_enabled']) {
-            $email_sent['admin'] = $email_handler->send_admin_notification($booking_ids[0]);
+            $email_sent['admin'] = $email_handler->send_admin_notification($booking_ids[0]['id']);
         }
         
-        // Send user confirmation
+        // Send user confirmation with token
         if (isset($settings['user_email_enabled']) && $settings['user_email_enabled']) {
-            $email_sent['user'] = $email_handler->send_user_confirmation($booking_ids[0]);
+            $email_sent['user'] = $email_handler->send_user_confirmation($booking_ids[0]['id'], $booking_ids[0]['token']);
         }
         
         // Prepare form data for display (exclude confirmation fields)

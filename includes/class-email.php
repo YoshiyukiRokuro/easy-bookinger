@@ -41,7 +41,7 @@ class EasyBookinger_Email {
     /**
      * Send user confirmation email
      */
-    public function send_user_confirmation($booking_id) {
+    public function send_user_confirmation($booking_id, $confirmation_token = null) {
         $database = EasyBookinger_Database::instance();
         $booking = $database->get_booking($booking_id);
         
@@ -58,7 +58,7 @@ class EasyBookinger_Email {
         
         $form_data = maybe_unserialize($booking->form_data);
         
-        $message = $this->get_user_email_template($booking, $form_data);
+        $message = $this->get_user_email_template($booking, $form_data, $confirmation_token);
         
         $headers = array(
             'Content-Type: text/html; charset=UTF-8',
@@ -172,19 +172,19 @@ class EasyBookinger_Email {
     /**
      * Get user email template
      */
-    private function get_user_email_template($booking, $form_data) {
+    private function get_user_email_template($booking, $form_data, $confirmation_token = null) {
         $settings = get_option('easy_bookinger_settings', array());
         
         // Get custom template or use default
         if (isset($settings['user_email_body']) && !empty($settings['user_email_body'])) {
             $template = $settings['user_email_body'];
             // Use text template with placeholder replacement
-            $message = $this->replace_placeholders($template, $booking, $form_data);
+            $message = $this->replace_placeholders($template, $booking, $form_data, $confirmation_token);
             // Convert line breaks to HTML for email
             $message = nl2br(esc_html($message));
         } else {
             // Fallback to original HTML template
-            $message = $this->get_default_user_email_html($booking, $form_data);
+            $message = $this->get_default_user_email_html($booking, $form_data, $confirmation_token);
         }
         
         return $message;
@@ -193,7 +193,7 @@ class EasyBookinger_Email {
     /**
      * Replace placeholders in template
      */
-    private function replace_placeholders($template, $booking, $form_data = null) {
+    private function replace_placeholders($template, $booking, $form_data = null, $confirmation_token = null) {
         $site_name = get_bloginfo('name');
         $site_url = get_bloginfo('url');
         
@@ -203,12 +203,22 @@ class EasyBookinger_Email {
             $booking_dates .= ' ' . $booking->booking_time;
         }
         
+        // Create confirmation link if token is provided
+        $confirmation_link = '';
+        if ($confirmation_token) {
+            $confirmation_link = add_query_arg(array(
+                'action' => 'easy_bookinger_confirm',
+                'token' => $confirmation_token
+            ), $site_url);
+        }
+        
         $replacements = array(
             '{site_name}' => $site_name,
             '{site_url}' => $site_url,
             '{user_name}' => $booking->user_name,
             '{email}' => $booking->email,
             '{booking_dates}' => $booking_dates,
+            '{confirmation_link}' => $confirmation_link,
             '{booking_date}' => date('Y年n月j日', strtotime($booking->booking_date)),
             '{booking_time}' => $booking->booking_time ?: '',
             '{phone}' => $booking->phone ?: '',
@@ -228,7 +238,7 @@ class EasyBookinger_Email {
     /**
      * Get default user email HTML template (fallback)
      */
-    private function get_default_user_email_html($booking, $form_data) {
+    private function get_default_user_email_html($booking, $form_data, $confirmation_token = null) {
         $site_name = get_bloginfo('name');
         $site_url = get_bloginfo('url');
         
@@ -296,6 +306,27 @@ class EasyBookinger_Email {
                         </div>
                         <?php endif; ?>
                     </div>
+                    
+                    <?php if ($confirmation_token): ?>
+                    <div class="booking-info" style="background-color: #fff3cd; border-left-color: #ffc107;">
+                        <h3>予約確定のお手続き</h3>
+                        <p><strong>重要:</strong> この予約を確定するには、1時間以内に下記のリンクをクリックしてください。</p>
+                        <p style="text-align: center; margin: 20px 0;">
+                            <a href="<?php echo esc_url(add_query_arg(array('action' => 'easy_bookinger_confirm', 'token' => $confirmation_token), $site_url)); ?>" 
+                               style="display: inline-block; background-color: #007cba; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                                予約を確定する
+                            </a>
+                        </p>
+                        <p style="font-size: 12px; color: #666;">
+                            ※このリンクの有効期限は1時間です。期限を過ぎると予約は自動的にキャンセルされます。
+                        </p>
+                    </div>
+                    <?php else: ?>
+                    <div class="booking-info" style="background-color: #d4edda; border-left-color: #28a745;">
+                        <h3>予約確定済み</h3>
+                        <p>ご予約は確定いたしました。ありがとうございます。</p>
+                    </div>
+                    <?php endif; ?>
                     
                     <p>ご不明な点がございましたら、お気軽にお問い合わせください。</p>
                     

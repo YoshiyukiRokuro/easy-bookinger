@@ -18,6 +18,7 @@
                 allowedDays: [1, 2, 3, 4, 5],
                 bookedDates: {},
                 restrictedDates: [],
+                restrictedDatesReasons: {},
                 quotasData: {},
                 specialAvailability: {},
                 enableTimeSlots: false,
@@ -28,6 +29,7 @@
             
             this.bookedDates = this.settings.bookedDates;
             this.restrictedDates = this.settings.restrictedDates;
+            this.restrictedDatesReasons = this.settings.restrictedDatesReasons || {};
             this.quotasData = this.settings.quotasData;
             this.specialAvailability = this.settings.specialAvailability;
             this.bindEvents();
@@ -265,8 +267,12 @@
             }
             
             var statusText = '';
-            if (isPast || isRestricted || isBeyondDisplayRange) {
+            if (isPast || isBeyondDisplayRange) {
                 statusText = '<div class="eb-day-status unavailable">不可</div>';
+            } else if (isRestricted) {
+                // Show specific restriction reason if available
+                var restrictionReason = this.restrictedDatesReasons[dateStr] ? this.restrictedDatesReasons[dateStr].reason : '不可';
+                statusText = '<div class="eb-day-status restricted">' + restrictionReason + '</div>';
             } else if (isSameDayBlocked) {
                 statusText = '<div class="eb-day-status same-day-blocked">当日不可</div>';
             } else if (isBeyondFutureLimit) {

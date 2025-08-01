@@ -14,13 +14,15 @@ class EasyBookinger_Settings {
      * Render settings page
      */
     public function render_settings_page() {
+        // Handle form submission BEFORE any output
+        if (isset($_POST['submit'])) {
+            $this->save_settings();
+            return; // Exit after redirect to prevent any output
+        }
+        
         // Display success message if settings were saved
         if (isset($_GET['settings_saved']) && $_GET['settings_saved'] === '1') {
             echo '<div class="notice notice-success is-dismissible"><p>' . __('設定を保存しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
-        }
-        
-        if (isset($_POST['submit'])) {
-            $this->save_settings();
         }
         
         $settings = get_option('easy_bookinger_settings', array());

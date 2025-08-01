@@ -232,8 +232,23 @@ class EasyBookinger_Admin {
                             ?>
                             <td>
                                 <?php
-                                $status_class = $booking->status === 'active' ? 'status-active' : 'status-inactive';
-                                $status_text = $booking->status === 'active' ? __('有効', EASY_BOOKINGER_TEXT_DOMAIN) : __('無効', EASY_BOOKINGER_TEXT_DOMAIN);
+                                switch ($booking->status) {
+                                    case 'confirmed':
+                                        $status_class = 'status-confirmed';
+                                        $status_text = __('確定', EASY_BOOKINGER_TEXT_DOMAIN);
+                                        break;
+                                    case 'pending':
+                                        $status_class = 'status-pending';
+                                        $status_text = __('仮予約', EASY_BOOKINGER_TEXT_DOMAIN);
+                                        break;
+                                    case 'active': // Legacy status for backward compatibility
+                                        $status_class = 'status-confirmed';
+                                        $status_text = __('確定', EASY_BOOKINGER_TEXT_DOMAIN);
+                                        break;
+                                    default:
+                                        $status_class = 'status-inactive';
+                                        $status_text = __('無効', EASY_BOOKINGER_TEXT_DOMAIN);
+                                }
                                 ?>
                                 <span class="status <?php echo esc_attr($status_class); ?>"><?php echo esc_html($status_text); ?></span>
                             </td>
@@ -242,9 +257,13 @@ class EasyBookinger_Admin {
                                 <a href="<?php echo esc_url(add_query_arg(array('action' => 'view', 'booking_id' => $booking->id, '_wpnonce' => wp_create_nonce('easy_bookinger_admin_action_' . $booking->id)))); ?>" class="button button-small">
                                     <?php _e('詳細', EASY_BOOKINGER_TEXT_DOMAIN); ?>
                                 </a>
-                                <?php if ($booking->status === 'active'): ?>
+                                <?php if ($booking->status === 'confirmed' || $booking->status === 'active'): ?>
                                 <a href="<?php echo esc_url(add_query_arg(array('action' => 'deactivate', 'booking_id' => $booking->id, '_wpnonce' => wp_create_nonce('easy_bookinger_admin_action_' . $booking->id)))); ?>" class="button button-small">
                                     <?php _e('無効化', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                                </a>
+                                <?php elseif ($booking->status === 'pending'): ?>
+                                <a href="<?php echo esc_url(add_query_arg(array('action' => 'confirm', 'booking_id' => $booking->id, '_wpnonce' => wp_create_nonce('easy_bookinger_admin_action_' . $booking->id)))); ?>" class="button button-small">
+                                    <?php _e('確定', EASY_BOOKINGER_TEXT_DOMAIN); ?>
                                 </a>
                                 <?php else: ?>
                                 <a href="<?php echo esc_url(add_query_arg(array('action' => 'activate', 'booking_id' => $booking->id, '_wpnonce' => wp_create_nonce('easy_bookinger_admin_action_' . $booking->id)))); ?>" class="button button-small">
@@ -552,7 +571,7 @@ class EasyBookinger_Admin {
             LEFT JOIN (
                 SELECT booking_date, COUNT(*) as actual_bookings 
                 FROM $bookings_table 
-                WHERE status = 'active' AND booking_date BETWEEN %s AND %s
+                WHERE status = 'confirmed' AND booking_date BETWEEN %s AND %s
                 GROUP BY booking_date
             ) b ON q.quota_date = b.booking_date
             WHERE q.quota_date BETWEEN %s AND %s
@@ -757,9 +776,21 @@ class EasyBookinger_Admin {
         
         switch ($action) {
             case 'activate':
-                $database->update_booking($booking_id, array('status' => 'active'));
+                $database->update_booking($booking_id, array('status' => 'confirmed'));
                 add_action('admin_notices', function() {
                     echo '<div class="notice notice-success is-dismissible"><p>' . __('予約を有効化しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+                });
+                break;
+                
+            case 'confirm':
+                $database->update_booking($booking_id, array(
+                    'status' => 'confirmed',
+                    'confirmed_at' => current_time('mysql'),
+                    'confirmation_token' => null,
+                    'token_expires_at' => null
+                ));
+                add_action('admin_notices', function() {
+                    echo '<div class="notice notice-success is-dismissible"><p>' . __('予約を確定しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
                 });
                 break;
                 
