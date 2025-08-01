@@ -17,13 +17,31 @@ class EasyBookinger_Settings {
         // Handle form submission BEFORE any output
         if (isset($_POST['submit'])) {
             $this->save_settings();
-            // Exit immediately after save_settings to prevent white page
-            exit;
+            // Note: save_settings() handles redirect and exit, no need for additional exit here
         }
         
         // Display success message if settings were saved
         if (isset($_GET['settings_saved']) && $_GET['settings_saved'] === '1') {
             echo '<div class="notice notice-success is-dismissible"><p>' . __('設定を保存しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+        }
+        
+        // Display error messages
+        if (isset($_GET['settings_error'])) {
+            $error_type = $_GET['settings_error'];
+            $error_message = '';
+            
+            switch ($error_type) {
+                case 'nonce_failed':
+                    $error_message = __('セキュリティチェックに失敗しました。再度お試しください。', EASY_BOOKINGER_TEXT_DOMAIN);
+                    break;
+                case 'save_failed':
+                    $error_message = __('設定の保存中にエラーが発生しました。再度お試しください。', EASY_BOOKINGER_TEXT_DOMAIN);
+                    break;
+                default:
+                    $error_message = __('予期しないエラーが発生しました。', EASY_BOOKINGER_TEXT_DOMAIN);
+            }
+            
+            echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($error_message) . '</p></div>';
         }
         
         $settings = get_option('easy_bookinger_settings', array());
@@ -309,7 +327,7 @@ class EasyBookinger_Settings {
                     </tr>
                 </table>
                 
-                <?php submit_button(); ?>
+                <?php submit_button(__('設定を保存', EASY_BOOKINGER_TEXT_DOMAIN), 'primary', 'submit'); ?>
             </form>
         </div>
         <?php
@@ -319,9 +337,19 @@ class EasyBookinger_Settings {
      * Save settings
      */
     private function save_settings() {
+        // Verify nonce
         if (!wp_verify_nonce($_POST['easy_bookinger_settings_nonce'], 'easy_bookinger_settings')) {
-            wp_die(__('セキュリティチェックに失敗しました', EASY_BOOKINGER_TEXT_DOMAIN));
+            // Redirect back with error message instead of wp_die() to prevent white screen
+            $redirect_url = add_query_arg(array(
+                'page' => 'easy-bookinger-settings',
+                'settings_error' => 'nonce_failed'
+            ), admin_url('admin.php'));
+            
+            wp_redirect($redirect_url);
+            exit;
         }
+        
+        try {
         
         $settings = array(
             'display_months' => intval($_POST['display_months']),
@@ -449,6 +477,19 @@ class EasyBookinger_Settings {
         
         wp_redirect($redirect_url);
         exit;
+        
+        } catch (Exception $e) {
+            // Log error and redirect with error message
+            error_log('Easy Bookinger Settings Save Error: ' . $e->getMessage());
+            
+            $redirect_url = add_query_arg(array(
+                'page' => 'easy-bookinger-settings',
+                'settings_error' => 'save_failed'
+            ), admin_url('admin.php'));
+            
+            wp_redirect($redirect_url);
+            exit;
+        }
     }
     
     /**
