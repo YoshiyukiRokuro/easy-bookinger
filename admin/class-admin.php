@@ -156,6 +156,32 @@ class EasyBookinger_Admin {
     public function admin_init() {
         // Register settings
         register_setting('easy_bookinger_settings', 'easy_bookinger_settings');
+        
+        // Handle settings form submission early to prevent headers already sent issues
+        $this->handle_settings_submission();
+    }
+    
+    /**
+     * Handle settings form submission early in admin_init
+     */
+    private function handle_settings_submission() {
+        // Only process if we're on the settings page and have a POST submission
+        if (!isset($_GET['page']) || $_GET['page'] !== 'easy-bookinger-settings') {
+            return;
+        }
+        
+        if (!isset($_POST['submit']) || !isset($_POST['easy_bookinger_settings_nonce'])) {
+            return;
+        }
+        
+        // Verify user capabilities
+        if (!current_user_can('manage_options')) {
+            wp_die(__('このページにアクセスする権限がありません。', EASY_BOOKINGER_TEXT_DOMAIN));
+        }
+        
+        // Handle the settings save through the settings class
+        $settings_handler = new EasyBookinger_Settings();
+        $settings_handler->handle_settings_save();
     }
     
     /**
