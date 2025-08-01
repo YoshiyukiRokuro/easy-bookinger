@@ -148,8 +148,13 @@ class EasyBookinger_Shortcode {
         // Get restricted dates
         $restricted_dates = $database->get_restricted_dates($date_from, $date_to);
         $restricted_dates_array = array();
+        $restricted_dates_with_reasons = array();
         foreach ($restricted_dates as $restriction) {
             $restricted_dates_array[] = $restriction->restriction_date;
+            $restricted_dates_with_reasons[$restriction->restriction_date] = array(
+                'reason' => $restriction->reason ?: '不可',
+                'type' => $restriction->restriction_type
+            );
         }
         
         // Get quotas data
@@ -333,6 +338,7 @@ class EasyBookinger_Shortcode {
                         allowSameDayBooking: <?php echo json_encode($allow_same_day_booking); ?>,
                         bookedDates: <?php echo json_encode($booked_dates); ?>,
                         restrictedDates: <?php echo json_encode($restricted_dates_array); ?>,
+                        restrictedDatesReasons: <?php echo json_encode($restricted_dates_with_reasons); ?>,
                         quotasData: <?php echo json_encode($quotas_data); ?>,
                         specialAvailability: <?php echo json_encode($special_availability_data); ?>,
                         enableTimeSlots: <?php echo json_encode($enable_time_slots); ?>,

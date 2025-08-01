@@ -42,13 +42,18 @@ class EasyBookinger_Database {
             phone varchar(50) DEFAULT NULL,
             comment text DEFAULT NULL,
             form_data longtext DEFAULT NULL,
-            status varchar(20) DEFAULT 'active',
+            status varchar(20) DEFAULT 'pending',
+            confirmation_token varchar(255) DEFAULT NULL,
+            token_expires_at datetime DEFAULT NULL,
+            confirmed_at datetime DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY booking_date (booking_date),
             KEY email (email),
-            KEY status (status)
+            KEY status (status),
+            KEY confirmation_token (confirmation_token),
+            KEY token_expires_at (token_expires_at)
         ) $charset_collate;";
         
         // Settings table
@@ -140,6 +145,38 @@ class EasyBookinger_Database {
         dbDelta($sql_timeslots);
         dbDelta($sql_special_availability);
         dbDelta($sql_admin_emails);
+        
+        // Update existing bookings table if needed
+        self::update_bookings_table_schema();
+    }
+    
+    /**
+     * Update bookings table schema for existing installations
+     */
+    private static function update_bookings_table_schema() {
+        global $wpdb;
+        
+        $bookings_table = $wpdb->prefix . 'easy_bookinger_bookings';
+        
+        // Check if new columns exist and add them if they don't
+        $columns = $wpdb->get_col("DESC `{$bookings_table}`", 0);
+        
+        if (!in_array('confirmation_token', $columns)) {
+            $wpdb->query("ALTER TABLE `{$bookings_table}` ADD COLUMN `confirmation_token` varchar(255) DEFAULT NULL");
+            $wpdb->query("ALTER TABLE `{$bookings_table}` ADD INDEX `confirmation_token` (`confirmation_token`)");
+        }
+        
+        if (!in_array('token_expires_at', $columns)) {
+            $wpdb->query("ALTER TABLE `{$bookings_table}` ADD COLUMN `token_expires_at` datetime DEFAULT NULL");
+            $wpdb->query("ALTER TABLE `{$bookings_table}` ADD INDEX `token_expires_at` (`token_expires_at`)");
+        }
+        
+        if (!in_array('confirmed_at', $columns)) {
+            $wpdb->query("ALTER TABLE `{$bookings_table}` ADD COLUMN `confirmed_at` datetime DEFAULT NULL");
+        }
+        
+        // Update existing bookings to confirmed status if they have 'active' status
+        $wpdb->query("UPDATE `{$bookings_table}` SET `status` = 'confirmed', `confirmed_at` = `created_at` WHERE `status` = 'active'");
     }
     
     /**
@@ -301,13 +338,95 @@ class EasyBookinger_Database {
     }
     
     /**
+     * Generate confirmation token for booking
+     */
+    public function generate_confirmation_token($booking_id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_bookings';
+        $token = wp_generate_password(32, false, false);
+        $expires_at = date('Y-m-d H:i:s', strtotime('+1 hour'));
+        
+        $result = $wpdb->update(
+            $table,
+            array(
+                'confirmation_token' => $token,
+                'token_expires_at' => $expires_at
+            ),
+            array('id' => $booking_id)
+        );
+        
+        return $result ? $token : false;
+    }
+    
+    /**
+     * Confirm booking by token
+     */
+    public function confirm_booking_by_token($token) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_bookings';
+        
+        // First, check if token exists and is not expired
+        $booking = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE confirmation_token = %s AND token_expires_at > NOW() AND status = 'pending'",
+            $token
+        ));
+        
+        if (!$booking) {
+            return false;
+        }
+        
+        // Update booking status to confirmed
+        $result = $wpdb->update(
+            $table,
+            array(
+                'status' => 'confirmed',
+                'confirmed_at' => current_time('mysql'),
+                'confirmation_token' => null,
+                'token_expires_at' => null
+            ),
+            array('id' => $booking->id)
+        );
+        
+        return $result ? $booking : false;
+    }
+    
+    /**
+     * Get booking by confirmation token
+     */
+    public function get_booking_by_token($token) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_bookings';
+        return $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE confirmation_token = %s",
+            $token
+        ));
+    }
+    
+    /**
+     * Clean up expired temporary bookings
+     */
+    public function cleanup_expired_bookings() {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_bookings';
+        
+        // Delete expired pending bookings
+        $result = $wpdb->query("DELETE FROM $table WHERE status = 'pending' AND token_expires_at < NOW()");
+        
+        return $result;
+    }
+    
+    /**
      * Get booked dates
      */
     public function get_booked_dates($date_from = null, $date_to = null) {
         global $wpdb;
         
         $table = $wpdb->prefix . 'easy_bookinger_bookings';
-        $where_clauses = array("status = 'active'");
+        $where_clauses = array("status = 'confirmed'");
         $values = array();
         
         if ($date_from) {
@@ -534,7 +653,7 @@ class EasyBookinger_Database {
         
         // Get current bookings count
         $current_bookings = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND status = 'active'",
+            "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND status = 'confirmed'",
             $date
         ));
         
@@ -549,6 +668,20 @@ class EasyBookinger_Database {
      * Get remaining quota for date
      */
     public function get_remaining_quota($date) {
+        // Check for special availability first
+        $special_availability = $this->get_special_availability($date, $date);
+        if (!empty($special_availability) && $special_availability[0]->is_available && !is_null($special_availability[0]->max_bookings)) {
+            // Use special availability quota
+            global $wpdb;
+            $bookings_table = $wpdb->prefix . 'easy_bookinger_bookings';
+            $current_bookings = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND status = 'confirmed'",
+                $date
+            ));
+            
+            return max(0, $special_availability[0]->max_bookings - (int)$current_bookings);
+        }
+        
         $quota = $this->get_booking_quota($date);
         
         if (!$quota) {
@@ -560,7 +693,7 @@ class EasyBookinger_Database {
             global $wpdb;
             $bookings_table = $wpdb->prefix . 'easy_bookinger_bookings';
             $current_bookings = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND status = 'active'",
+                "SELECT COUNT(*) FROM $bookings_table WHERE booking_date = %s AND status = 'confirmed'",
                 $date
             ));
             
