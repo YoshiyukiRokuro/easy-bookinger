@@ -285,6 +285,29 @@ class EasyBookinger_Shortcode {
                 </div>
             </div>
             
+            <!-- Confirmation Modal -->
+            <div id="eb-confirmation-modal" class="eb-modal" style="display: none;">
+                <div class="eb-modal-content">
+                    <div class="eb-modal-header">
+                        <h3><?php _e('予約内容の確認', EASY_BOOKINGER_TEXT_DOMAIN); ?></h3>
+                        <button type="button" class="eb-modal-close">&times;</button>
+                    </div>
+                    
+                    <div id="eb-confirmation-content" class="eb-confirmation-content">
+                        <!-- Confirmation content will be populated by JavaScript -->
+                    </div>
+                    
+                    <div class="eb-modal-actions">
+                        <button type="button" class="eb-button eb-secondary" id="eb-confirmation-cancel">
+                            <?php _e('戻る', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                        </button>
+                        <button type="button" class="eb-button eb-primary" id="eb-confirmation-submit">
+                            <?php _e('この内容で予約する', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Success Modal -->
             <div id="eb-success-modal" class="eb-modal" style="display: none;">
                 <div class="eb-modal-content">

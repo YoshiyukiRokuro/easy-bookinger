@@ -272,6 +272,35 @@ class EasyBookinger_Settings {
                 
                 <button type="button" id="add-field" class="button"><?php _e('項目を追加', EASY_BOOKINGER_TEXT_DOMAIN); ?></button>
                 
+                <h2><?php _e('メールテンプレート設定', EASY_BOOKINGER_TEXT_DOMAIN); ?></h2>
+                <p><?php _e('利用者への確認メールと予約完了画面のメッセージを設定します。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><?php _e('確認メール件名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                        <td>
+                            <input type="text" name="user_email_subject" value="<?php echo esc_attr($settings['user_email_subject'] ?? '[{site_name}] 予約確認メール'); ?>" class="regular-text" />
+                            <p class="description"><?php _e('利用者への確認メールの件名です。{site_name}でサイト名を挿入できます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row"><?php _e('確認メール本文', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                        <td>
+                            <textarea name="user_email_body" rows="10" cols="50" class="large-text"><?php echo esc_textarea($settings['user_email_body'] ?? $this->get_default_user_email_template()); ?></textarea>
+                            <p class="description"><?php _e('利用者への確認メールの本文です。{user_name}、{booking_dates}、{site_name}、{site_url}などのプレースホルダーが使用できます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row"><?php _e('予約完了画面メッセージ', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
+                        <td>
+                            <textarea name="booking_success_message" rows="5" cols="50" class="large-text"><?php echo esc_textarea($settings['booking_success_message'] ?? $this->get_default_success_message()); ?></textarea>
+                            <p class="description"><?php _e('予約完了後に表示されるメッセージです。{user_name}、{booking_dates}などのプレースホルダーが使用できます。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                        </td>
+                    </tr>
+                </table>
+                
                 <?php submit_button(); ?>
             </form>
         </div>
@@ -297,6 +326,9 @@ class EasyBookinger_Settings {
             'allow_same_day_booking' => isset($_POST['allow_same_day_booking']),
             'timezone' => sanitize_text_field($_POST['timezone'] ?? 'Asia/Tokyo'),
             'max_future_days' => intval($_POST['max_future_days'] ?? 0),
+            'user_email_subject' => sanitize_text_field($_POST['user_email_subject'] ?? '[{site_name}] 予約確認メール'),
+            'user_email_body' => sanitize_textarea_field($_POST['user_email_body'] ?? $this->get_default_user_email_template()),
+            'booking_success_message' => sanitize_textarea_field($_POST['booking_success_message'] ?? $this->get_default_success_message()),
             'booking_fields' => array()
         );
         
@@ -404,5 +436,37 @@ class EasyBookinger_Settings {
         add_action('admin_notices', function() {
             echo '<div class="notice notice-success is-dismissible"><p>' . __('設定を保存しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
         });
+    }
+    
+    /**
+     * Get default user email template
+     */
+    private function get_default_user_email_template() {
+        return "お世話になっております。
+
+この度は、{site_name}にて予約をいただき、ありがとうございます。
+以下の内容で予約を承りました。
+
+■ 予約者名：{user_name}
+■ 予約日程：{booking_dates}
+■ メールアドレス：{email}
+
+ご不明な点がございましたら、お気軽にお問い合わせください。
+
+{site_name}
+{site_url}";
+    }
+    
+    /**
+     * Get default success message
+     */
+    private function get_default_success_message() {
+        return "予約が完了しました。
+
+{user_name}様の予約内容：
+{booking_dates}
+
+確認メールをお送りいたしましたので、ご確認ください。
+ありがとうございました。";
     }
 }
