@@ -405,6 +405,48 @@ class EasyBookinger_Database {
     }
     
     /**
+     * Update date restriction
+     */
+    public function update_date_restriction($id, $data) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_date_restrictions';
+        
+        $update_data = array();
+        
+        if (isset($data['restriction_date'])) {
+            $update_data['restriction_date'] = sanitize_text_field($data['restriction_date']);
+        }
+        
+        if (isset($data['restriction_type'])) {
+            $update_data['restriction_type'] = sanitize_text_field($data['restriction_type']);
+        }
+        
+        if (isset($data['reason'])) {
+            $update_data['reason'] = sanitize_text_field($data['reason']);
+        }
+        
+        if (empty($update_data)) {
+            return false;
+        }
+        
+        return $wpdb->update($table, $update_data, array('id' => (int)$id));
+    }
+
+    /**
+     * Get date restriction by ID
+     */
+    public function get_date_restriction_by_id($id) {
+        global $wpdb;
+        
+        $table = $wpdb->prefix . 'easy_bookinger_date_restrictions';
+        return $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE id = %d",
+            $id
+        ));
+    }
+
+    /**
      * Remove date restriction
      */
     public function remove_date_restriction($date) {

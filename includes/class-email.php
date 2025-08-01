@@ -52,7 +52,9 @@ class EasyBookinger_Email {
         $settings = get_option('easy_bookinger_settings', array());
         $admin_email = get_option('admin_email');
         
-        $subject = sprintf(__('[%s] 予約確認メール', EASY_BOOKINGER_TEXT_DOMAIN), get_bloginfo('name'));
+        // Use customizable subject
+        $subject_template = isset($settings['user_email_subject']) ? $settings['user_email_subject'] : '[{site_name}] 予約確認メール';
+        $subject = $this->replace_placeholders($subject_template, $booking, null);
         
         $form_data = maybe_unserialize($booking->form_data);
         
@@ -171,6 +173,62 @@ class EasyBookinger_Email {
      * Get user email template
      */
     private function get_user_email_template($booking, $form_data) {
+        $settings = get_option('easy_bookinger_settings', array());
+        
+        // Get custom template or use default
+        if (isset($settings['user_email_body']) && !empty($settings['user_email_body'])) {
+            $template = $settings['user_email_body'];
+            // Use text template with placeholder replacement
+            $message = $this->replace_placeholders($template, $booking, $form_data);
+            // Convert line breaks to HTML for email
+            $message = nl2br(esc_html($message));
+        } else {
+            // Fallback to original HTML template
+            $message = $this->get_default_user_email_html($booking, $form_data);
+        }
+        
+        return $message;
+    }
+    
+    /**
+     * Replace placeholders in template
+     */
+    private function replace_placeholders($template, $booking, $form_data = null) {
+        $site_name = get_bloginfo('name');
+        $site_url = get_bloginfo('url');
+        
+        // Create booking dates display
+        $booking_dates = date('Y年n月j日', strtotime($booking->booking_date));
+        if (!empty($booking->booking_time)) {
+            $booking_dates .= ' ' . $booking->booking_time;
+        }
+        
+        $replacements = array(
+            '{site_name}' => $site_name,
+            '{site_url}' => $site_url,
+            '{user_name}' => $booking->user_name,
+            '{email}' => $booking->email,
+            '{booking_dates}' => $booking_dates,
+            '{booking_date}' => date('Y年n月j日', strtotime($booking->booking_date)),
+            '{booking_time}' => $booking->booking_time ?: '',
+            '{phone}' => $booking->phone ?: '',
+            '{comment}' => $booking->comment ?: ''
+        );
+        
+        // Add form data fields if available
+        if ($form_data && is_array($form_data)) {
+            foreach ($form_data as $key => $value) {
+                $replacements['{' . $key . '}'] = $value;
+            }
+        }
+        
+        return str_replace(array_keys($replacements), array_values($replacements), $template);
+    }
+    
+    /**
+     * Get default user email HTML template (fallback)
+     */
+    private function get_default_user_email_html($booking, $form_data) {
         $site_name = get_bloginfo('name');
         $site_url = get_bloginfo('url');
         
@@ -189,11 +247,7 @@ class EasyBookinger_Email {
                 .booking-info { background-color: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 5px; }
                 .info-row { margin-bottom: 10px; }
                 .label { font-weight: bold; display: inline-block; width: 120px; }
-                .pdf-info { background-color: #e8f4fd; padding: 20px; margin: 20px 0; border-radius: 5px; border-left: 4px solid #007cba; }
-                .pdf-button { display: inline-block; padding: 12px 24px; background-color: #007cba; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
-                .password { font-family: monospace; font-size: 16px; font-weight: bold; background-color: #f0f0f0; padding: 5px 10px; border-radius: 3px; }
                 .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; }
-                .note { color: #666; font-size: 14px; margin-top: 15px; }
             </style>
         </head>
         <body>

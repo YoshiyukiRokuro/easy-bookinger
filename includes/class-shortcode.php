@@ -74,7 +74,7 @@ class EasyBookinger_Shortcode {
                 'text' => array(
                     'selectDate' => __('日付を選択してください', EASY_BOOKINGER_TEXT_DOMAIN),
                     'maxDaysExceeded' => __('選択できる日数の上限を超えています', EASY_BOOKINGER_TEXT_DOMAIN),
-                    'confirmBooking' => __('この内容で予約を登録しますか？', EASY_BOOKINGER_TEXT_DOMAIN),
+                    'confirmBooking' => __('予約内容の確認', EASY_BOOKINGER_TEXT_DOMAIN),
                     'bookingSuccess' => __('予約が完了しました', EASY_BOOKINGER_TEXT_DOMAIN),
                     'bookingError' => __('予約の登録に失敗しました', EASY_BOOKINGER_TEXT_DOMAIN),
                     'validationError' => __('入力内容に誤りがあります', EASY_BOOKINGER_TEXT_DOMAIN),
@@ -250,10 +250,10 @@ class EasyBookinger_Shortcode {
                         
                         <?php if ($enable_time_slots && !empty($time_slots)): ?>
                         <div class="eb-form-section">
-                            <h4><?php _e('時間帯選択', EASY_BOOKINGER_TEXT_DOMAIN); ?> <span class="eb-required">*</span></h4>
+                            <h4><?php _e('希望時間帯選択', EASY_BOOKINGER_TEXT_DOMAIN); ?> <span class="eb-required">*</span></h4>
                             <div class="eb-time-slots">
                                 <select name="booking_time_slot" class="eb-time-slot-select" required>
-                                    <option value=""><?php _e('時間帯を選択してください', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                    <option value=""><?php _e('希望時間帯を選択してください', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
                                     <?php foreach ($time_slots as $slot): ?>
                                     <option value="<?php echo esc_attr($slot['id']); ?>">
                                         <?php echo esc_html($slot['slot_name']); ?>
@@ -282,6 +282,29 @@ class EasyBookinger_Shortcode {
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+            
+            <!-- Confirmation Modal -->
+            <div id="eb-confirmation-modal" class="eb-modal" style="display: none;">
+                <div class="eb-modal-content">
+                    <div class="eb-modal-header">
+                        <h3><?php _e('予約内容の確認', EASY_BOOKINGER_TEXT_DOMAIN); ?></h3>
+                        <button type="button" class="eb-modal-close">&times;</button>
+                    </div>
+                    
+                    <div id="eb-confirmation-content" class="eb-confirmation-content">
+                        <!-- Confirmation content will be populated by JavaScript -->
+                    </div>
+                    
+                    <div class="eb-modal-actions">
+                        <button type="button" class="eb-button eb-secondary" id="eb-confirmation-cancel">
+                            <?php _e('戻る', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                        </button>
+                        <button type="button" class="eb-button eb-primary" id="eb-confirmation-submit">
+                            <?php _e('この内容で予約する', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                        </button>
+                    </div>
                 </div>
             </div>
             

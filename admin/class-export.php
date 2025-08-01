@@ -51,7 +51,12 @@ class EasyBookinger_Export {
                         <tr>
                             <th scope="row"><?php _e('ファイル名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             <td>
-                                <input type="text" name="filename" value="<?php echo esc_attr('easy_bookinger_export_' . date('Y-m-d')); ?>" style="width: 300px;" />
+                                <?php 
+                                $timezone = get_option('timezone_string') ?: 'Asia/Tokyo';
+                                $current_time = new DateTime('now', new DateTimeZone($timezone));
+                                $default_filename = 'easy_bookinger_export_' . $current_time->format('Y-m-d');
+                                ?>
+                                <input type="text" name="filename" value="<?php echo esc_attr($default_filename); ?>" style="width: 300px;" />
                                 <span>.csv</span>
                                 <p class="description"><?php _e('保存するCSVファイルの名前を指定してください（拡張子は自動で付きます）', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
                             </td>
@@ -176,13 +181,17 @@ class EasyBookinger_Export {
                 ob_end_clean();
             }
             add_action('admin_notices', function() {
-                echo '<div class="notice notice-warning is-dismissible"><p>' . __('エクスポートするデータがありません', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+                echo '<div class="notice notice-error is-dismissible"><p>' . __('エクスポートするデータが0件です。データが登録されていることを確認してください。', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
             });
             return;
         }
         
-        // Get custom filename or use default
-        $filename = !empty($_POST['filename']) ? sanitize_file_name($_POST['filename']) : 'easy_bookinger_export_' . date('Y-m-d');
+        // Get custom filename or use default with WordPress locale time
+        $timezone = get_option('timezone_string') ?: 'Asia/Tokyo';
+        $current_time = new DateTime('now', new DateTimeZone($timezone));
+        $default_filename = 'easy_bookinger_export_' . $current_time->format('Y-m-d');
+        
+        $filename = !empty($_POST['filename']) ? sanitize_file_name($_POST['filename']) : $default_filename;
         $filename .= '.csv';
         
         // Generate CSV content
@@ -237,25 +246,23 @@ class EasyBookinger_Export {
         $booking_fields = isset($settings['booking_fields']) ? $settings['booking_fields'] : array();
         $timezone = isset($settings['timezone']) ? $settings['timezone'] : 'Asia/Tokyo';
         
-        // Create header row
+        // Create header row to match admin booking list
         $headers = array(
             __('ID', EASY_BOOKINGER_TEXT_DOMAIN),
             __('予約日', EASY_BOOKINGER_TEXT_DOMAIN),
-            __('時間', EASY_BOOKINGER_TEXT_DOMAIN),
-            __('氏名', EASY_BOOKINGER_TEXT_DOMAIN),
-            __('メール', EASY_BOOKINGER_TEXT_DOMAIN),
-            __('電話', EASY_BOOKINGER_TEXT_DOMAIN),
-            __('コメント', EASY_BOOKINGER_TEXT_DOMAIN),
-            __('ステータス', EASY_BOOKINGER_TEXT_DOMAIN),
-            __('登録日時', EASY_BOOKINGER_TEXT_DOMAIN)
+            __('予約時間', EASY_BOOKINGER_TEXT_DOMAIN)
         );
         
-        // Add custom field headers
+        // Add booking fields headers (excluding email_confirm)
         foreach ($booking_fields as $field) {
-            if (!in_array($field['name'], array('user_name', 'email', 'email_confirm', 'phone', 'comment', 'booking_time'))) {
+            if ($field['name'] !== 'email_confirm') {
                 $headers[] = $field['label'];
             }
         }
+        
+        // Add status and registration date
+        $headers[] = __('ステータス', EASY_BOOKINGER_TEXT_DOMAIN);
+        $headers[] = __('登録日', EASY_BOOKINGER_TEXT_DOMAIN);
         
         // Start with BOM for UTF-8 (helps with Excel compatibility)
         $csv_content = "\xEF\xBB\xBF";
@@ -270,13 +277,13 @@ class EasyBookinger_Export {
         foreach ($bookings as $booking) {
             $form_data = maybe_unserialize($booking->form_data);
             
-            // Convert created_at timestamp to configured timezone
+            // Convert created_at timestamp to configured timezone  
             $created_datetime = '';
             if (!empty($booking->created_at)) {
                 try {
                     $date = new DateTime($booking->created_at, new DateTimeZone('UTC'));
                     $date->setTimezone(new DateTimeZone($timezone));
-                    $created_datetime = $date->format('Y-m-d H:i:s');
+                    $created_datetime = $date->format('Y/m/d H:i'); // Match admin display format
                 } catch (Exception $e) {
                     $created_datetime = $booking->created_at; // Fallback to original
                 }
@@ -284,23 +291,21 @@ class EasyBookinger_Export {
             
             $row_data = array(
                 $booking->id,
-                $booking->booking_date,
-                $booking->booking_time,
-                $booking->user_name,
-                $booking->email,
-                $booking->phone,
-                $booking->comment,
-                $booking->status === 'active' ? __('有効', EASY_BOOKINGER_TEXT_DOMAIN) : __('無効', EASY_BOOKINGER_TEXT_DOMAIN),
-                $created_datetime
+                date('Y/m/d', strtotime($booking->booking_date)), // Match admin display format
+                $this->format_booking_time_for_export($booking->booking_time) // Format like admin
             );
             
-            // Add custom field data
+            // Add booking field data (excluding email_confirm)
             foreach ($booking_fields as $field) {
-                if (!in_array($field['name'], array('user_name', 'email', 'email_confirm', 'phone', 'comment', 'booking_time'))) {
+                if ($field['name'] !== 'email_confirm') {
                     $value = isset($form_data[$field['name']]) ? $form_data[$field['name']] : '';
                     $row_data[] = $value;
                 }
             }
+            
+            // Add status and created date
+            $row_data[] = $booking->status === 'active' ? __('有効', EASY_BOOKINGER_TEXT_DOMAIN) : __('無効', EASY_BOOKINGER_TEXT_DOMAIN);
+            $row_data[] = $created_datetime;
             
             fputcsv($stream, $row_data);
         }
@@ -563,6 +568,44 @@ class EasyBookinger_Export {
         update_option('easy_bookinger_export_files', $export_files);
     }
     
+    /**
+     * Format booking time display for export (same as admin)
+     */
+    private function format_booking_time_for_export($booking_time) {
+        // If booking_time is empty, return a dash
+        if (empty($booking_time)) {
+            return '-';
+        }
+        
+        // If booking_time is a number (time slot ID), convert it to time format
+        if (is_numeric($booking_time)) {
+            $database = EasyBookinger_Database::instance();
+            $time_slot = $database->get_time_slot_by_id((int)$booking_time);
+            
+            if ($time_slot) {
+                // Return formatted time from time slot
+                return date('H:i', strtotime($time_slot->start_time));
+            } else {
+                // Time slot not found, return the raw value
+                return $booking_time;
+            }
+        }
+        
+        // If it's already in time format (HH:MM), return as is
+        if (preg_match('/^\d{1,2}:\d{2}$/', $booking_time)) {
+            return $booking_time;
+        }
+        
+        // Try to parse as time and format it
+        $parsed_time = strtotime($booking_time);
+        if ($parsed_time !== false) {
+            return date('H:i', $parsed_time);
+        }
+        
+        // If all else fails, return the original value
+        return $booking_time;
+    }
+
     /**
      * Show statistics
      */

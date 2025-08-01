@@ -219,8 +219,11 @@ class EasyBookinger_Ajax {
             $display_time = $booking_time;
         }
         
+        // Get success message from settings
+        $success_message = $this->get_booking_success_message($booking_dates, $form_data);
+        
         wp_send_json_success(array(
-            'message' => __('予約が完了しました', EASY_BOOKINGER_TEXT_DOMAIN),
+            'message' => $success_message,
             'booking_ids' => $booking_ids,
             'booking_dates' => $booking_dates,
             'booking_time' => $booking_time,
@@ -229,6 +232,38 @@ class EasyBookinger_Ajax {
             'time_slot' => $display_time,
             'time_slot_info' => $time_slot_display
         ));
+    }
+    
+    /**
+     * Get booking success message
+     */
+    private function get_booking_success_message($booking_dates, $form_data) {
+        $settings = get_option('easy_bookinger_settings', array());
+        
+        // Get custom success message or use default
+        $template = isset($settings['booking_success_message']) && !empty($settings['booking_success_message']) 
+            ? $settings['booking_success_message'] 
+            : "予約が完了しました。\n\n{user_name}様の予約内容：\n{booking_dates}\n\n確認メールをお送りいたしましたので、ご確認ください。\nありがとうございました。";
+        
+        // Create placeholder replacements
+        $replacements = array(
+            '{user_name}' => isset($form_data['user_name']) ? $form_data['user_name'] : '',
+            '{booking_dates}' => is_array($booking_dates) ? implode(', ', $booking_dates) : $booking_dates,
+            '{site_name}' => get_bloginfo('name'),
+            '{site_url}' => get_bloginfo('url')
+        );
+        
+        // Add other form data
+        if (is_array($form_data)) {
+            foreach ($form_data as $key => $value) {
+                $replacements['{' . $key . '}'] = $value;
+            }
+        }
+        
+        $message = str_replace(array_keys($replacements), array_values($replacements), $template);
+        
+        // Convert line breaks to HTML for display
+        return nl2br(esc_html($message));
     }
     
     /**
@@ -272,11 +307,21 @@ class EasyBookinger_Ajax {
             $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
         }
         
+        // Get special availability dates
+        $special_availability = $database->get_special_availability($date_from, $date_to);
+        $special_availability_data = array();
+        foreach ($special_availability as $special) {
+            if ($special->is_available) {
+                $special_availability_data[] = $special->availability_date;
+            }
+        }
+        
         wp_send_json_success(array(
             'booked_dates' => $booked_dates,
             'restricted_dates' => $restricted_dates_array,
             'quotas_data' => $quotas_data,
             'allowed_days' => $allowed_days,
+            'special_availability' => $special_availability_data,
             'current_date' => date('Y-m-d')
         ));
     }

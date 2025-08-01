@@ -310,6 +310,12 @@ class EasyBookinger_Admin {
             $this->handle_restrictions_action($_POST);
         }
         
+        // Check if we're editing a restriction
+        $editing_restriction = null;
+        if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
+            $editing_restriction = $database->get_date_restriction_by_id($_GET['edit']);
+        }
+        
         // Get restricted dates
         $restricted_dates = $database->get_restricted_dates();
         
@@ -318,37 +324,43 @@ class EasyBookinger_Admin {
             <h1><?php _e('日付制限管理', EASY_BOOKINGER_TEXT_DOMAIN); ?></h1>
             
             <div class="eb-admin-section">
-                <h2><?php _e('新しい制限日を追加', EASY_BOOKINGER_TEXT_DOMAIN); ?></h2>
+                <h2><?php _e($editing_restriction ? '制限日を編集' : '新しい制限日を追加', EASY_BOOKINGER_TEXT_DOMAIN); ?></h2>
                 <form method="post" action="">
                     <?php wp_nonce_field('eb_restrictions_action', 'eb_restrictions_nonce'); ?>
-                    <input type="hidden" name="action" value="add_restriction">
+                    <input type="hidden" name="action" value="<?php echo $editing_restriction ? 'update_restriction' : 'add_restriction'; ?>">
+                    <?php if ($editing_restriction): ?>
+                        <input type="hidden" name="restriction_id" value="<?php echo esc_attr($editing_restriction->id); ?>">
+                    <?php endif; ?>
                     
                     <table class="form-table">
                         <tr>
                             <th scope="row"><?php _e('日付', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             <td>
-                                <input type="date" name="restriction_date" required>
+                                <input type="date" name="restriction_date" value="<?php echo $editing_restriction ? esc_attr($editing_restriction->restriction_date) : ''; ?>" required>
                             </td>
                         </tr>
                         <tr>
                             <th scope="row"><?php _e('制限タイプ', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             <td>
                                 <select name="restriction_type">
-                                    <option value="custom"><?php _e('カスタム', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                    <option value="holiday"><?php _e('祝日', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
-                                    <option value="closed"><?php _e('定休日', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                    <option value="custom" <?php selected($editing_restriction ? $editing_restriction->restriction_type : '', 'custom'); ?>><?php _e('カスタム', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                    <option value="holiday" <?php selected($editing_restriction ? $editing_restriction->restriction_type : '', 'holiday'); ?>><?php _e('祝日', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
+                                    <option value="closed" <?php selected($editing_restriction ? $editing_restriction->restriction_type : '', 'closed'); ?>><?php _e('定休日', EASY_BOOKINGER_TEXT_DOMAIN); ?></option>
                                 </select>
                             </td>
                         </tr>
                         <tr>
                             <th scope="row"><?php _e('理由', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             <td>
-                                <input type="text" name="reason" class="regular-text">
+                                <input type="text" name="reason" value="<?php echo $editing_restriction ? esc_attr($editing_restriction->reason) : ''; ?>" class="regular-text">
                             </td>
                         </tr>
                     </table>
                     
-                    <?php submit_button(__('制限を追加', EASY_BOOKINGER_TEXT_DOMAIN)); ?>
+                    <?php submit_button(__($editing_restriction ? '制限を更新' : '制限を追加', EASY_BOOKINGER_TEXT_DOMAIN)); ?>
+                    <?php if ($editing_restriction): ?>
+                        <a href="<?php echo esc_url(remove_query_arg('edit')); ?>" class="button"><?php _e('編集をキャンセル', EASY_BOOKINGER_TEXT_DOMAIN); ?></a>
+                    <?php endif; ?>
                 </form>
             </div>
             
@@ -382,11 +394,14 @@ class EasyBookinger_Admin {
                                 </td>
                                 <td><?php echo esc_html($restriction->reason); ?></td>
                                 <td>
+                                    <a href="<?php echo esc_url(add_query_arg('edit', $restriction->id)); ?>" class="button button-small">
+                                        <?php _e('編集', EASY_BOOKINGER_TEXT_DOMAIN); ?>
+                                    </a>
                                     <form method="post" style="display: inline;">
                                         <?php wp_nonce_field('eb_restrictions_action', 'eb_restrictions_nonce'); ?>
                                         <input type="hidden" name="action" value="remove_restriction">
                                         <input type="hidden" name="restriction_date" value="<?php echo esc_attr($restriction->restriction_date); ?>">
-                                        <input type="submit" class="button button-small button-link-delete" value="<?php _e('削除', EASY_BOOKINGER_TEXT_DOMAIN); ?>">
+                                        <input type="submit" class="button button-small button-link-delete" value="<?php _e('削除', EASY_BOOKINGER_TEXT_DOMAIN); ?>" onclick="return confirm('<?php _e('この制限日を削除しますか？', EASY_BOOKINGER_TEXT_DOMAIN); ?>')">
                                     </form>
                                 </td>
                             </tr>
@@ -442,9 +457,9 @@ class EasyBookinger_Admin {
                         <tr>
                             <th scope="row"><?php _e('予約枠数', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             <td>
-                                <input type="number" name="max_bookings" value="3" min="1" max="20" />
+                                <input type="number" name="max_bookings" value="3" min="1" />
                                 <span><?php _e('件', EASY_BOOKINGER_TEXT_DOMAIN); ?></span>
-                                <p class="description"><?php _e('この日の最大予約受付件数を設定してください', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
+                                <p class="description"><?php _e('この日の最大予約受付件数を設定してください（制限なし）', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
                             </td>
                         </tr>
                     </table>
@@ -473,7 +488,7 @@ class EasyBookinger_Admin {
                             <?php foreach ($special_dates as $date): ?>
                             <tr>
                                 <td><?php echo esc_html($date->availability_date); ?></td>
-                                <td><?php echo esc_html(date('D', strtotime($date->availability_date))); ?></td>
+                                <td><?php echo esc_html($this->get_japanese_day_name($date->availability_date)); ?></td>
                                 <td><?php echo esc_html($date->reason ?: '-'); ?></td>
                                 <td><?php echo esc_html($date->max_bookings ?: __('デフォルト', EASY_BOOKINGER_TEXT_DOMAIN)); ?></td>
                                 <td>
@@ -664,12 +679,6 @@ class EasyBookinger_Admin {
                                 <p class="description"><?php _e('空欄の場合は時間を表示名として使用します。', EASY_BOOKINGER_TEXT_DOMAIN); ?></p>
                             </td>
                         </tr>
-                        <tr>
-                            <th scope="row"><?php _e('最大予約数', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                            <td>
-                                <input type="number" name="max_bookings" min="1" max="10" value="1" required>
-                            </td>
-                        </tr>
                     </table>
                     
                     <?php submit_button(__('時間帯を追加', EASY_BOOKINGER_TEXT_DOMAIN)); ?>
@@ -686,7 +695,6 @@ class EasyBookinger_Admin {
                             <tr>
                                 <th><?php _e('開始時間', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                                 <th><?php _e('表示名', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
-                                <th><?php _e('最大予約数', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                                 <th><?php _e('状態', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                                 <th><?php _e('操作', EASY_BOOKINGER_TEXT_DOMAIN); ?></th>
                             </tr>
@@ -696,7 +704,6 @@ class EasyBookinger_Admin {
                             <tr>
                                 <td><?php echo esc_html(date('H:i', strtotime($slot->start_time))); ?></td>
                                 <td><?php echo esc_html($slot->slot_name ?: date('H:i', strtotime($slot->start_time))); ?></td>
-                                <td><?php echo esc_html($slot->max_bookings); ?></td>
                                 <td>
                                     <?php if ($slot->is_active): ?>
                                         <span style="color: #46b450;"><?php _e('有効', EASY_BOOKINGER_TEXT_DOMAIN); ?></span>
@@ -795,6 +802,25 @@ class EasyBookinger_Admin {
                 } else {
                     add_action('admin_notices', function() {
                         echo '<div class="notice notice-error is-dismissible"><p>' . __('制限日の追加に失敗しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+                    });
+                }
+                break;
+                
+            case 'update_restriction':
+                $restriction_id = (int)$post_data['restriction_id'];
+                $data = array(
+                    'restriction_date' => sanitize_text_field($post_data['restriction_date']),
+                    'restriction_type' => sanitize_text_field($post_data['restriction_type']),
+                    'reason' => sanitize_text_field($post_data['reason'])
+                );
+                
+                if ($database->update_date_restriction($restriction_id, $data)) {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-success is-dismissible"><p>' . __('制限日を更新しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
+                    });
+                } else {
+                    add_action('admin_notices', function() {
+                        echo '<div class="notice notice-error is-dismissible"><p>' . __('制限日の更新に失敗しました', EASY_BOOKINGER_TEXT_DOMAIN) . '</p></div>';
                     });
                 }
                 break;
@@ -949,7 +975,7 @@ class EasyBookinger_Admin {
             case 'add_timeslot':
                 $start_time = sanitize_text_field($post_data['start_time']) . ':00';
                 $slot_name = sanitize_text_field($post_data['slot_name']);
-                $max_bookings = (int)$post_data['max_bookings'];
+                $max_bookings = 1; // Default to 1 booking per slot
                 
                 if ($database->add_time_slot($start_time, $slot_name, $max_bookings)) {
                     add_action('admin_notices', function() {
@@ -1002,6 +1028,24 @@ class EasyBookinger_Admin {
         }
     }
     
+    /**
+     * Get Japanese day name for date
+     */
+    private function get_japanese_day_name($date) {
+        $day_of_week = date('w', strtotime($date)); // 0 = Sunday, 6 = Saturday
+        $japanese_days = array(
+            0 => __('日曜日', EASY_BOOKINGER_TEXT_DOMAIN),
+            1 => __('月曜日', EASY_BOOKINGER_TEXT_DOMAIN),
+            2 => __('火曜日', EASY_BOOKINGER_TEXT_DOMAIN),
+            3 => __('水曜日', EASY_BOOKINGER_TEXT_DOMAIN),
+            4 => __('木曜日', EASY_BOOKINGER_TEXT_DOMAIN),
+            5 => __('金曜日', EASY_BOOKINGER_TEXT_DOMAIN),
+            6 => __('土曜日', EASY_BOOKINGER_TEXT_DOMAIN)
+        );
+        
+        return $japanese_days[$day_of_week];
+    }
+
     /**
      * Format booking time display
      */
