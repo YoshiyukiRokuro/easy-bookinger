@@ -903,3 +903,48 @@
         font-size: 14px;
     }
 }
+
+/* Confirmation Modal */
+.eb-confirmation-summary {
+    line-height: 1.6;
+}
+
+.eb-confirm-section {
+    margin: 15px 0;
+    padding: 10px;
+    border-left: 3px solid #007cba;
+    background-color: #f8f9fa;
+}
+
+.eb-confirm-date {
+    display: inline-block;
+    padding: 2px 8px;
+    margin: 2px;
+    background-color: #007cba;
+    color: white;
+    border-radius: 3px;
+    font-size: 14px;
+}
+
+.eb-confirm-field {
+    margin: 5px 0;
+    padding: 3px 0;
+}
+
+.eb-field-label {
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.eb-field-value {
+    color: #333;
+}
+
+.eb-modal-actions {
+    margin-top: 20px;
+    text-align: right;
+}
+
+.eb-modal-actions .eb-button {
+    margin-left: 10px;
+}

@@ -218,16 +218,17 @@
                 isBeyondFutureLimit = date > maxFutureDate;
             }
             
-            // Special availability overrides normal day restrictions
+            // Special availability overrides normal day restrictions and date restrictions
             var isSelectableDay = hasSpecialAvailability || isAllowedDay;
+            var isBlockedByRestriction = isRestricted && !hasSpecialAvailability; // Special availability overrides restrictions
             
             var classes = ['eb-calendar-day'];
             
             if (isOtherMonth) {
                 classes.push('other-month');
-            } else if (isPast || !isSelectableDay || isRestricted || isQuotaFull || isBeyondDisplayRange || isSameDayBlocked || isBeyondFutureLimit) {
+            } else if (isPast || !isSelectableDay || isBlockedByRestriction || isQuotaFull || isBeyondDisplayRange || isSameDayBlocked || isBeyondFutureLimit) {
                 classes.push('disabled');
-                if (isRestricted) {
+                if (isBlockedByRestriction) {
                     classes.push('restricted');
                 }
                 if (isQuotaFull) {
@@ -428,6 +429,75 @@
                 this.showValidationErrors(validationErrors);
                 return;
             }
+            
+            // Show confirmation modal instead of submitting directly
+            this.showConfirmationModal(formData);
+        },
+        
+        showConfirmationModal: function(formData) {
+            var self = this;
+            var $modal = $('#eb-confirmation-modal');
+            var $content = $('#eb-confirmation-content');
+            
+            // Build confirmation content
+            var html = '<div class="eb-confirmation-summary">';
+            html += '<h4>' + easyBookinger.text.confirmBooking + '</h4>';
+            
+            // Show selected dates
+            html += '<div class="eb-confirm-section">';
+            html += '<strong>予約日程:</strong><br>';
+            this.selectedDates.forEach(function(date) {
+                html += '<span class="eb-confirm-date">' + self.formatDateDisplay(date) + '</span><br>';
+            });
+            html += '</div>';
+            
+            // Show time slot if selected
+            if (formData.booking_time_slot) {
+                var timeSlot = this.getTimeSlotById(formData.booking_time_slot);
+                if (timeSlot) {
+                    html += '<div class="eb-confirm-section">';
+                    html += '<strong>希望時間帯:</strong><br>';
+                    html += '<span>' + timeSlot.slot_name + '</span>';
+                    html += '</div>';
+                }
+            }
+            
+            // Show form data
+            html += '<div class="eb-confirm-section">';
+            html += '<strong>入力情報:</strong><br>';
+            this.settings.bookingFields.forEach(function(field) {
+                if (field.name !== 'email_confirm' && field.name !== 'booking_time_slot' && formData[field.name]) {
+                    html += '<div class="eb-confirm-field">';
+                    html += '<span class="eb-field-label">' + field.label + ':</span> ';
+                    html += '<span class="eb-field-value">' + formData[field.name] + '</span>';
+                    html += '</div>';
+                }
+            });
+            html += '</div>';
+            
+            html += '</div>';
+            
+            $content.html(html);
+            
+            // Store form data for actual submission
+            this.pendingFormData = formData;
+            
+            // Show modal
+            $modal.show();
+            
+            // Bind confirmation buttons
+            $('#eb-confirmation-cancel').off('click').on('click', function() {
+                $modal.hide();
+            });
+            
+            $('#eb-confirmation-submit').off('click').on('click', function() {
+                $modal.hide();
+                self.performActualSubmission(self.pendingFormData);
+            });
+        },
+        
+        performActualSubmission: function(formData) {
+            var self = this;
             
             // Show loading
             this.showLoading();
@@ -682,6 +752,15 @@
                         self.bookedDates = response.data.booked_dates;
                         self.restrictedDates = response.data.restricted_dates || [];
                         self.quotasData = response.data.quotas_data || {};
+                        
+                        // Handle special availability data
+                        self.specialAvailability = {};
+                        if (response.data.special_availability) {
+                            response.data.special_availability.forEach(function(date) {
+                                self.specialAvailability[date] = true;
+                            });
+                        }
+                        
                         self.renderCalendar();
                     }
                 }
@@ -709,6 +788,16 @@
             return date1.getFullYear() === date2.getFullYear() &&
                    date1.getMonth() === date2.getMonth() &&
                    date1.getDate() === date2.getDate();
+        },
+        
+        getTimeSlotById: function(slotId) {
+            var timeSlots = this.settings.timeSlots || [];
+            for (var i = 0; i < timeSlots.length; i++) {
+                if (timeSlots[i].id == slotId) {
+                    return timeSlots[i];
+                }
+            }
+            return null;
         }
     };
     

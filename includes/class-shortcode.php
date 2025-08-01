@@ -74,7 +74,7 @@ class EasyBookinger_Shortcode {
                 'text' => array(
                     'selectDate' => __('日付を選択してください', EASY_BOOKINGER_TEXT_DOMAIN),
                     'maxDaysExceeded' => __('選択できる日数の上限を超えています', EASY_BOOKINGER_TEXT_DOMAIN),
-                    'confirmBooking' => __('この内容で予約を登録しますか？', EASY_BOOKINGER_TEXT_DOMAIN),
+                    'confirmBooking' => __('予約内容の確認', EASY_BOOKINGER_TEXT_DOMAIN),
                     'bookingSuccess' => __('予約が完了しました', EASY_BOOKINGER_TEXT_DOMAIN),
                     'bookingError' => __('予約の登録に失敗しました', EASY_BOOKINGER_TEXT_DOMAIN),
                     'validationError' => __('入力内容に誤りがあります', EASY_BOOKINGER_TEXT_DOMAIN),
