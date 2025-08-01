@@ -17,7 +17,8 @@ class EasyBookinger_Settings {
         // Handle form submission BEFORE any output
         if (isset($_POST['submit'])) {
             $this->save_settings();
-            return; // Exit after redirect to prevent any output
+            // Exit immediately after save_settings to prevent white page
+            exit;
         }
         
         // Display success message if settings were saved
@@ -457,11 +458,17 @@ class EasyBookinger_Settings {
         return "お世話になっております。
 
 この度は、{site_name}にて予約をいただき、ありがとうございます。
-以下の内容で予約を承りました。
+以下の内容で仮予約を承りました。
 
 ■ 予約者名：{user_name}
 ■ 予約日程：{booking_dates}
 ■ メールアドレス：{email}
+
+【重要】予約確定のお手続き
+この予約を確定するには、1時間以内に下記のリンクをクリックしてください。
+{confirmation_link}
+
+※このリンクの有効期限は1時間です。期限を過ぎると予約は自動的にキャンセルされます。
 
 ご不明な点がございましたら、お気軽にお問い合わせください。
 
@@ -473,12 +480,13 @@ class EasyBookinger_Settings {
      * Get default success message
      */
     private function get_default_success_message() {
-        return "予約が完了しました。
+        return "仮予約が完了しました。
 
 {user_name}様の予約内容：
 {booking_dates}
 
-確認メールをお送りいたしましたので、ご確認ください。
+予約を確定するため、確認メールをお送りいたしました。
+メールに記載されたリンクを1時間以内にクリックして、予約を確定してください。
 ありがとうございました。";
     }
 }
